@@ -1,45 +1,35 @@
 # COMP3001 - 操作系统
 
-<!--
-1. 通过 [Shields.io](https://shields.io/) 生成如下的徽章，标注课程的基本信息。
-2. 请根据课程的具体内容增删仓库的子文件夹。子文件夹建议使用小写英文，如果需要附加说明，则添加 README.md。注意，添加 README 后 .gitkeep 文件仍需保留。
-3. 关于课程的描述可以不止以下几个方面，酌情增删。
-4. hoa.moe 生成本课程对应页面后，请将页面链接复制到 GitHub 仓库的 About/Website 中。
-5. 可以在 GitHub 页面的 About/Topics 中为课程添加话题名称。
--->
+![成绩构成](https://img.shields.io/badge/成绩构成-gold)
+![平时分10%](https://img.shields.io/badge/平时分-10%25-wheat)
+![实验30%](https://img.shields.io/badge/实验-30%25-wheat)
+![期末考试60%](https://img.shields.io/badge/期末考试-60%25-wheat)
 
-![考试课](https://img.shields.io/badge/%E8%80%83%E8%AF%95%E8%AF%BE-red)
-![学分](https://img.shields.io/badge/%E5%AD%A6%E5%88%86-3-moccasin)
-
-![成绩构成](https://img.shields.io/badge/%E6%88%90%E7%BB%A9%E6%9E%84%E6%88%90-gold)
-![平时分10%](https://img.shields.io/badge/%E5%B9%B3%E6%97%B6%E5%88%86-10%25-wheat)
-![实验30%](https://img.shields.io/badge/%E5%AE%9E%E9%AA%8C-30%25-wheat)
-![期末考试60%](https://img.shields.io/badge/%E6%9C%9F%E6%9C%AB%E8%80%83%E8%AF%95-60%25-wheat)
-
+两位授课老师风格迥异，但是并不影响考试的公平性——因为考试考得基本跟上课关系不太大。
 
 ## 授课教师
 
-> note：两位授课老师风格迥异
+- 刘川意
+  - 上课抽点回答问题。
+  - PPT基本是《操作系统导论》的原版英文PPT。
+  - 助教非常负责。
+  - 不一定课前发PPT，基本随缘。
+- 夏文
+  - 讲课很专业。中文PPT，内容多，总的参考《CSAPP》。
+  - 但是，两位老师虽然风格迥异，但是并不影响考试的公平性——因为考试考得基本跟上课关系不太大（见考试部分）。
 
-刘川意：
+## 教材
 
-上课抽点回答问题。
-
-PPT基本是《操作系统导论》的原版英文PPT。
-
-助教非常负责。
-
-不一定课前发PPT，基本随缘。
-
-夏文：
-
-讲课很专业。中文PPT，内容多，总的参考《CSAPP》。
-
-但是，两位老师虽然风格迥异，但是并不影响考试的公平性——因为考试考得基本跟上课关系不太大（见考试部分）。
+- **Operating Systems: Three Easy Pieces (操作系统导论)**（Remzi H. Arpaci-Dusseau / Andrea C. Arpaci-Dusseau / Arpaci-Dusseau Books / textbook）
+- **Computer Systems: A Programmer's Perspective (CSAPP)**（Randal E. Bryant / David R. O'Hallaron / Pearson / 3rd Edition / textbook）
+- **王道考研系列：操作系统考研复习指导**（王道论坛 / 电子工业出版社 / textbook）
 
 ## 关于考试
 
 可以参考《王道考研——操作系统》进行复习。
+
+操作系统确实是 CS 的一门很重要的课程，好好学习必不会吃亏！
+课程可能会设置「附加题」，保证平时分 + 实验分拉满。请审慎选择！
 
 ## 关于实验
 
@@ -52,14 +42,3 @@ PPT基本是《操作系统导论》的原版英文PPT。
 最后一节实验课会进行课堂检查，会要求现场改代码、解读代码等等，所以需要做好应对之策。
 
 可以多问老师。助教可能派不上太大用处。
-
-## 学习建议
-
-操作系统确实是CS的一门很重要的课程，好好学习必不会吃亏！
-
-课程可能会设置「附加题」，保证平时分 + 实验分拉满。请审慎选择！
-
-
-
-
-
