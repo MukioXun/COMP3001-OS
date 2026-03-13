@@ -11,6 +11,7 @@
 
 ## 授课教师
 
+<!-- TOML-LECTURERS: part="items" -->
 - 刘川意
   <!-- TOML-ITEM: id="review-刘川意-1" -->
   - 上课抽点回答问题。

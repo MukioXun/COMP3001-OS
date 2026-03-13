@@ -1,13 +1,14 @@
 course_name = "操作系统"
-repo_type = "normal"
 course_code = "COMP3001"
-
+repo_type = "normal"
 description = "两位授课老师风格迥异，但是并不影响考试的公平性——因为考试考得基本跟上课关系不太大。"
 
-[[lecturers]]
+[lecturers]
+
+[[lecturers.items]]
 name = "刘川意"
 
-[[lecturers.reviews]]
+[[lecturers.items.reviews]]
 content = """
 上课抽点回答问题。
 PPT基本是《操作系统导论》的原版英文PPT。
@@ -15,10 +16,10 @@ PPT基本是《操作系统导论》的原版英文PPT。
 不一定课前发PPT，基本随缘。
 """
 
-[[lecturers]]
+[[lecturers.items]]
 name = "夏文"
 
-[[lecturers.reviews]]
+[[lecturers.items.reviews]]
 content = """
 讲课很专业。中文PPT，内容多，总的参考《CSAPP》。
 但是，两位老师虽然风格迥异，但是并不影响考试的公平性——因为考试考得基本跟上课关系不太大（见考试部分）。
@@ -34,7 +35,6 @@ content = """
 - **王道考研系列：操作系统考研复习指导**（王道论坛 / 电子工业出版社 / textbook）
 """
 
-
 [[sections]]
 title = "关于考试"
 
@@ -46,7 +46,6 @@ content = """
 课程可能会设置「附加题」，保证平时分 + 实验分拉满。请审慎选择！
 """
 author = { name = "", link = "", date = "" }
-
 
 [[sections]]
 title = "关于实验"
