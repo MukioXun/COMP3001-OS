@@ -1,7 +1,6 @@
 course_name = "操作系统"
 course_code = "COMP3001"
 repo_type = "normal"
-description = ""
 
 [lecturers]
 
@@ -20,9 +19,7 @@ PPT基本是《操作系统导论》的原版英文PPT。
 name = "夏文"
 
 [[lecturers.items.reviews]]
-content = """
-讲课很专业。中文PPT，内容多，总的参考《CSAPP》。
-"""
+content = "讲课很专业。中文PPT，内容多，总的参考《CSAPP》。"
 
 [[lecturers.items]]
 name = "[陈斌](http://ai.hitsz.edu.cn/info/1030/1076.htm)"
@@ -59,9 +56,7 @@ content = """
 author = { name = "", link = "", date = "" }
 
 [[sections.items]]
-content = """
-2025年是 40 分的 20 道选择 + 6 道大题，大题主要考查信号量、银行家算法、进程调度、分页和磁盘 IO，难度不大，基本照着 PPT 复习就可以。
-"""
+content = "2025年是 40 分的 20 道选择 + 6 道大题，大题主要考查信号量、银行家算法、进程调度、分页和磁盘 IO，难度不大，基本照着 PPT 复习就可以。"
 author = { name = "HalfCooler", link = "https://github.com/NeptuneZhao/", date = "2026-06" }
 
 [[sections]]
