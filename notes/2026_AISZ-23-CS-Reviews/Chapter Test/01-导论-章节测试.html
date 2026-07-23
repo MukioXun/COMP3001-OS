@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第一章：导论与操作系统结构</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第一章：导论与操作系统结构</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "操作系统三大抽象中，\"进程\"是对哪些硬件的抽象？", "options": ["仅对处理器（CPU）的抽象", "仅对主存（RAM）的抽象", "对处理器、主存和I/O设备三者整体的抽象", "仅对I/O设备的抽象"], "answer": 2, "knowledge_point": "模块一：操作系统是什么", "diagnosis_hint": "误以为进程只抽象了CPU", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：进程让每个程序以为独占整套计算机——处理器执行指令、主存存储数据、I/O设备进行输入输出，三者缺一不可。三大抽象：进程→处理器+主存+I/O；虚拟内存→主存+磁盘；文件→I/O设备。", "pitfall": "进程≠CPU抽象。进程是对处理器、主存、I/O设备三者整体的抽象。"}, {"type": "choice", "points": 2, "question": "下列关于\"并发\"与\"并行\"的描述，正确的是？", "options": ["并发是同一时刻多个进程真正同时运行，需要多核CPU", "并行是宏观并行、微观交替，单核CPU即可实现", "单核CPU上既有并发也有并行", "并发是\"时间段内\"多事件发生（宏观并行微观交替），并行是\"同一时刻\"真正同时（需多核）"], "answer": 3, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "将并发与并行的定义互换", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：并发(Concurrence)=\"时间段内\"发生，微观轮流占CPU；并行(Parallelism)=\"同一时刻\"真正同时，需多核。A把并发定义给了并行；B把并行定义给了并发；C错在单核无并行。", "pitfall": "高频：并发='时间段'，并行='同一时刻'。单核系统只有并发，没有并行。"}, {"type": "choice", "points": 2, "question": "OS\"共享\"特征分互斥共享和同时访问两类，下列哪项是\"互斥共享（临界资源）\"的典型例子？", "options": ["只读文件（多进程可同时读）", "打印机（同一时刻只允许一个进程使用）", "虚拟地址空间（每进程独立）", "系统时钟（多进程只读）"], "answer": 1, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "不清楚互斥共享与同时访问的区分标准", "explanation": "<strong>正确答案</strong>：B（打印机）<br><br><strong>推理过程</strong>：互斥共享=同一时刻只允许一个进程访问的临界资源。打印机若被两进程同时使用会输出混乱。只读文件可多进程同时读（同时访问）；虚拟地址空间是虚拟化；时钟只读属于同时访问。", "pitfall": "互斥共享不是'不共享'，而是'排队共享'，同一时刻只有一个进程持有使用权。"}, {"type": "choice", "points": 2, "question": "关于宏内核（Monolithic Kernel）与微内核（Microkernel），下列说法正确的是？", "options": ["微内核将文件系统、设备驱动全部放在内核空间运行", "宏内核各组件通过IPC消息传递通信，性能低", "宏内核中所有OS功能在同一内核地址空间运行，通过函数调用相互访问", "微内核的总代码量（含用户态服务）比宏内核更小"], "answer": 2, "knowledge_point": "模块四：操作系统内核结构", "diagnosis_hint": "混淆宏内核/微内核的服务位置和通信方式", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：宏内核将所有OS服务集中在内核空间同一地址空间，通过函数调用通信，开销小、性能高，但一崩全崩。微内核只保留基本IPC/调度/内存在内核，其余在用户态通过IPC通信（性能低）；IPC接口代码量大，总代码量反而更多。", "pitfall": "微内核'内核尺寸小'≠'总代码量小'，IPC接口庞大，总代码量反而更大。"}, {"type": "choice", "points": 2, "question": "系统调用与普通函数调用的根本区别是？", "options": ["系统调用执行速度比普通函数调用快", "系统调用只能在汇编语言中使用", "系统调用不需要传入任何参数", "系统调用通过特殊指令（syscall/int 0x80）从用户态陷入内核态，涉及特权级切换"], "answer": 3, "knowledge_point": "模块五：系统调用", "diagnosis_hint": "误以为系统调用只是特殊函数", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：用户程序在用户态(Ring 3)运行，无法直接访问硬件。系统调用通过syscall/int 0x80触发软件中断，CPU切换到内核态(Ring 0)，保存寄存器、执行内核代码后返回用户态。这一特权级切换开销显著大于普通函数调用（后者不切换特权级）。", "pitfall": "系统调用有显著性能开销，因为需要特权级切换；普通函数调用不切换特权级，开销极小。"}, {"type": "choice", "points": 2, "question": "多道程序设计（Multiprogramming）引入的主要目的是？", "options": ["让多个用户可以同时登录使用系统", "减少内存消耗，节省硬件成本", "当一道程序等待I/O时CPU切换到另一道程序，提高CPU利用率", "提高单个程序的运行速度"], "answer": 2, "knowledge_point": "模块三：操作系统发展历史", "diagnosis_hint": "将多道程序设计与分时系统混淆", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：多道程序设计核心：内存中同时驻留多道程序，当一道程序因等待I/O阻塞时，OS将CPU切换给另一道，减少CPU空等时间，大幅提升CPU利用率。让多用户同时登录是分时系统的目标，不是多道程序设计的直接目标。", "pitfall": "多道程序设计≠分时系统。多道目标是提高CPU利用率；分时目标是多用户共享。"}, {"type": "choice", "points": 2, "question": "下列哪项不是操作系统的四大特征之一？", "options": ["并发性（Concurrence）", "实时性（Real-time）", "共享性（Sharing）", "虚拟性（Virtual）"], "answer": 1, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "将RTOS的实时性误认为是通用OS的基本特征", "explanation": "<strong>正确答案</strong>：B（实时性）<br><br><strong>推理过程</strong>：OS四大特征是并发（Concurrence）、共享（Sharing）、虚拟（Virtual）、异步性（Asynchronism）。实时性是实时操作系统（RTOS）的特殊要求，不是通用OS的基本特征。", "pitfall": "四大特征：并发·共享·虚拟·异步。实时性是RTOS特性，不在四大特征中。"}, {"type": "choice", "points": 2, "question": "关于Unix历史，下列哪项描述正确？", "options": ["Unix最初由Linus Torvalds用C语言于1991年编写", "C语言是Dennis Ritchie于1972年为重写Unix而设计的", "Unix内核于1973年用B语言重写", "Unix原型于1969年由Ken Thompson用C语言在PDP-7上编写"], "answer": 1, "knowledge_point": "模块三：操作系统发展历史", "diagnosis_hint": "混淆Unix历史各年份和人物", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：时间线：1969年Ken Thompson用汇编写出Unix原型（非C语言）；1970年设计B语言；1972年Dennis Ritchie设计C语言；1973年用C重写Unix内核。Linux是1991年Linus Torvalds创建的，与Unix历史独立。", "pitfall": "Unix原型用汇编，不是C语言。C语言是1972年才设计的。"}, {"type": "choice", "points": 2, "question": "存储器层次结构中，速度最快的层次是？", "options": ["高速缓存（Cache/L1）", "主存（DRAM）", "寄存器（Register）", "固态硬盘（SSD）"], "answer": 2, "knowledge_point": "前置知识：计算机系统层次结构", "diagnosis_hint": "误以为高速缓存（Cache）是最快层", "explanation": "<strong>正确答案</strong>：C（寄存器）<br><br><strong>推理过程</strong>：存储器层次由快到慢：寄存器 &gt; L1 Cache &gt; L2 Cache &gt; 主存 &gt; SSD &gt; HDD。寄存器在CPU内部，访问延迟约1个时钟周期，是最快层。L1 Cache约4个周期，主存约100个周期。", "pitfall": "最快不是Cache，是寄存器。存储器层次最顶层（最快）= 寄存器。"}, {"type": "choice", "points": 2, "question": "OS系统调用的五大类型中，fork()、exit()、wait()属于哪类？", "options": ["文件管理", "设备管理", "信息维护", "进程控制"], "answer": 3, "knowledge_point": "模块五：系统调用", "diagnosis_hint": "不熟悉系统调用的五大分类", "explanation": "<strong>正确答案</strong>：D（进程控制）<br><br><strong>推理过程</strong>：fork()创建进程、exit()终止进程、wait()等待子进程，都是对进程生命周期的管理，属于\"进程控制\"类。其他分类：文件管理(open/read/write/close)、设备管理(ioctl)、信息维护(getpid/alarm)、通信(pipe/shmget)。", "pitfall": "五大类型：进程控制/文件管理/设备管理/信息维护/通信。fork是创建进程，属于进程控制。"}, {"type": "tf", "points": 1, "question": "在单核CPU系统上，两个进程的\"并发执行\"等同于\"并行执行\"。", "options": [], "answer": false, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "混淆并发与并行", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：并发是\"时间段内\"多事件发生，微观上CPU轮流执行；并行是\"同一时刻\"真正同时，需多个处理器核心。单核CPU上进程A和B\"并发\"是微观交替执行，不是同时，不等同于并行。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "虚拟内存是对主存和磁盘I/O设备的抽象，不只是内存的抽象。", "options": [], "answer": true, "knowledge_point": "模块一：操作系统是什么", "diagnosis_hint": "以为虚拟内存只抽象了主存", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：虚拟内存通过页面置换（将部分内容换出到磁盘）让程序看到比物理内存更大的地址空间。因此虚拟内存是对\"主存+磁盘\"两者的抽象，而不只是主存。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "系统调用本质上是一种特殊的函数调用，CPU不需要切换特权级。", "options": [], "answer": false, "knowledge_point": "模块五：系统调用", "diagnosis_hint": "将系统调用误认为普通函数调用", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：系统调用的本质特征就是特权级切换——通过syscall/int指令从用户态(Ring 3)陷入内核态(Ring 0)，执行完毕再返回用户态。这是系统调用与普通函数调用的根本区别，也是其性能开销远大于函数调用的原因。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "OS的\"异步性\"是指进程以不可预知的速度推进，结果具有不确定性，根本原因是多进程竞争资源。", "options": [], "answer": true, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：异步性根本原因：多个进程竞争CPU、内存、I/O等资源，任何进程可能在执行任意指令后被时钟中断剥夺CPU。若多进程共享变量而无同步机制，结果取决于指令交错的精确顺序，每次运行可能不同。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "微内核的内核本身代码量较小，但包含用户态服务在内的总代码量通常比宏内核更大。", "options": [], "answer": true, "knowledge_point": "模块四：操作系统内核结构", "diagnosis_hint": "以为微内核代码量比宏内核小", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：微内核将文件系统、驱动、网络等服务移到用户态，这些服务之间需要大量IPC接口代码。内核尺寸虽小，但用户态服务+IPC代码之和使总代码量反而更大。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "分时系统通过时间片轮转调度，使多个用户终端共享同一台主机，每个用户感觉独占系统。", "options": [], "answer": true, "knowledge_point": "模块三：操作系统发展历史", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：分时系统将CPU时间切割成极小的时间片（如20ms），依次分配给各用户进程。由于切换速度极快，每个用户都感觉自己独占了整台计算机。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在宏内核设计中，若文件系统驱动发生崩溃，通常不会影响系统其他部分，内核仍可正常运行。", "options": [], "answer": false, "knowledge_point": "模块四：操作系统内核结构", "diagnosis_hint": "混淆宏内核和微内核的故障隔离特性", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：宏内核中所有服务运行在同一内核地址空间，没有内存隔离。一个服务的错误（如数组越界、空指针）会直接破坏内核状态，导致整个系统崩溃（内核panic）。这正是微内核通过服务隔离要解决的问题。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "\"文件\"这一抽象统一了磁盘、键盘、网络等不同I/O设备的访问接口。", "options": [], "answer": true, "knowledge_point": "模块一：操作系统是什么", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：Unix/Linux\"一切皆文件\"——磁盘文件、标准输入（键盘）、标准输出（屏幕）、管道、网络socket都通过统一的open/read/write/close接口访问。这正是\"文件是I/O设备的抽象\"的体现。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "脱机批处理系统通过磁带中转数据，目的是避免主机长时间等待低速输入/输出设备。", "options": [], "answer": true, "knowledge_point": "模块三：操作系统发展历史", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：联机批处理中，主机直接连接低速读卡机，主机需等待低速I/O，CPU利用率极低。脱机批处理用外围机先将作业读入磁带，主机直接读磁带（速度远高于读卡机），避免了主机等待，提高了利用率。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "OS的\"并发\"和\"共享\"两个特征互为依存：没有并发不需要共享机制，没有共享机制并发进程会产生资源冲突。", "options": [], "answer": true, "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：若没有并发（只有一个进程），不存在资源竞争，不需要共享机制；若有并发但没有共享机制，多个进程会同时访问同一资源（如打印机），导致输出混乱或数据损坏。两者相互依存，共同构成OS设计的核心挑战。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述操作系统的四大特征，并解释\"并发\"与\"并行\"的区别。", "options": [], "answer": "", "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①<b>并发</b>：两个或多个事件在同一时间段内发生（宏观并行，微观交替），是单处理机OS最重要特征。<br>②<b>共享</b>：系统资源可供多个并发进程共同使用，分互斥共享（临界资源，如打印机）和同时访问两类。<br>③<b>虚拟</b>：把一个物理实体变成若干逻辑上的对应物，如虚拟CPU和虚拟内存。<br>④<b>异步性</b>：进程以不可预知的速度推进，结果具有不确定性，根源是多进程竞争资源。<br><br><b>并发vs并行</b>：并发是\"时间段内\"（微观轮流），并行是\"同一时刻\"真正同时（需多核）。单核CPU只有并发，没有并行。", "pitfall": ""}, {"type": "short", "points": 6, "question": "比较宏内核与微内核的设计方案，从服务运行位置、通信方式、性能、安全性四个维度进行对比，各列举至少一个代表性操作系统。", "options": [], "answer": "", "knowledge_point": "模块四：操作系统内核结构", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><table border=\"1\" style=\"border-collapse:collapse;width:100%\"><tr><th>维度</th><th>宏内核</th><th>微内核</th></tr><tr><td>服务运行位置</td><td>内核空间（同一地址空间）</td><td>用户空间（独立进程）</td></tr><tr><td>通信方式</td><td>函数调用</td><td>IPC消息传递</td></tr><tr><td>性能</td><td>高（函数调用开销小）</td><td>低（IPC开销大）</td></tr><tr><td>安全性/稳定性</td><td>低（一崩全崩）</td><td>高（服务隔离）</td></tr><tr><td>代表</td><td>Linux、BSD</td><td>QNX、Minix、HURD</td></tr></table>", "pitfall": ""}, {"type": "short", "points": 6, "question": "描述一次完整的系统调用执行流程（以write()为例，从用户程序调用库函数到返回用户态）。", "options": [], "answer": "", "knowledge_point": "模块五：系统调用", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①用户程序调用C库函数write()<br>②库函数将系统调用号存入eax寄存器（x86 Linux: write=4）<br>③执行syscall/int 0x80指令，触发软件中断，CPU从用户态(Ring 3)切换到内核态(Ring 0)<br>④CPU保存程序计数器、标志寄存器等关键状态<br>⑤中断处理程序根据eax中的调用号，分发到对应内核函数sys_write()<br>⑥sys_write()执行实际写操作（访问文件系统、设备驱动等）<br>⑦执行完毕，恢复之前保存的寄存器状态<br>⑧CPU从内核态返回用户态，用户程序继续执行", "pitfall": ""}, {"type": "short", "points": 6, "question": "列举OS系统调用的五大类型，每类举一个典型调用名，并简述OS为什么需要提供系统调用机制（而不让用户程序直接访问硬件）。", "options": [], "answer": "", "knowledge_point": "模块五：系统调用", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><b>五大类型</b>：①进程控制：fork()（创建进程）②文件管理：open()（打开文件）③设备管理：ioctl()（设备控制）④信息维护：getpid()（获取进程ID）⑤通信：pipe()（创建管道）<br><br><b>为什么需要系统调用</b>：用户程序运行在用户态，受CPU特权级限制，无法直接访问硬件资源。若允许直接访问，任何程序都可破坏其他进程或内核状态，系统将不安全。系统调用是OS提供的\"受控入口\"——用户程序通过系统调用请求内核服务，内核验证权限后代为执行，既提供功能又保证安全隔离。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "为什么需要操作系统？结合OS的三大抽象（进程、虚拟内存、文件），阐述操作系统的本质作用及其存在价值。", "options": [], "answer": "", "knowledge_point": "模块一：操作系统是什么", "diagnosis_hint": "", "explanation": "<strong>参考答案（要点）</strong>：<br><b>为什么需要OS</b>：没有OS，每个程序需自行驱动硬件（复杂）；多程序无法安全共存（一程序可破坏另一程序的内存）；无法高效共享有限资源（CPU、内存、I/O设备）。<br><br><b>三大抽象体现OS本质</b>：<br>①<b>进程</b>（抽象处理器+主存+I/O）：让每个程序以为独占整套计算机，OS在幕后进行多路复用和隔离。<br>②<b>虚拟内存</b>（抽象主存+磁盘）：让每个程序以为有独立的大地址空间，OS管理物理内存分配和换入换出。<br>③<b>文件</b>（抽象I/O设备）：统一磁盘、键盘、网络访问接口，应用程序只需read/write，无需了解底层设备细节。<br><br><b>OS本质</b>：OS是\"硬件的管理者\"和\"应用程序的服务者\"——向下管理硬件资源，向上提供简洁统一的抽象接口，使多程序安全高效地共用一套硬件。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "阐述多道程序设计（Multiprogramming）的含义和引入背景，分析它如何提升系统效率。结合单道与多道程序系统的CPU利用率对比加以说明。", "options": [], "answer": "", "knowledge_point": "模块三：操作系统发展历史", "diagnosis_hint": "", "explanation": "<strong>参考答案（要点）</strong>：<br><b>引入背景</b>：批处理系统中，一道程序等待I/O时CPU只能空等，CPU利用率极低（可能不足10%）。<br><br><b>多道程序设计含义</b>：在内存中同时驻留多道程序，当正在运行的程序因等待I/O而阻塞时，OS立即将CPU切换给另一道就绪的程序，使CPU始终有事可做。<br><br><b>效率提升分析</b>：<br>单道系统：程序A运行→等I/O→继续运行……CPU利用率 = 运行时间/(运行+等待时间)，若等待时间长则利用率极低。<br>多道系统：程序A等I/O时，CPU切给程序B；B若也等I/O，切给C……多道并发使CPU几乎不空转，利用率大幅提升。<br><br><b>意义</b>：多道程序设计是现代OS进程调度的基础，引入了进程、上下文切换、内存管理（多程序共存）等核心概念。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "详细分析宏内核与微内核的设计哲学差异，从性能、安全性、可扩展性三个维度进行对比，结合具体OS举例。进一步说明：现实中为何出现\"混合内核\"设计，并举出一个代表性例子。", "options": [], "answer": "", "knowledge_point": "模块四：操作系统内核结构", "diagnosis_hint": "", "explanation": "<strong>参考答案（要点）</strong>：<br><b>设计哲学差异</b>：宏内核\"大一统\"——所有OS服务集中在内核空间，紧密耦合，代表：Linux、BSD。微内核\"最小化\"——内核只做最必要的事（IPC、调度、基本内存管理），其他服务作为独立用户态进程，代表：QNX、Minix、Mach。<br><br><b>三维度对比</b>：<br>①性能：宏内核优（函数调用 vs IPC；IPC需上下文切换、消息拷贝，开销是函数调用的几倍至几十倍）。<br>②安全性/稳定性：微内核优（服务在用户态独立运行，一个服务崩溃不影响内核和其他服务；宏内核一崩全崩）。<br>③可扩展性：微内核优（新服务作为用户态进程加入，不需修改内核；宏内核添加新功能需修改内核源码）。<br><br><b>混合内核</b>：为兼顾性能与安全，将性能关键部分留在内核，其他服务在用户态。代表：macOS基于Mach微内核+BSD层，将BSD子系统集成进内核空间以提升性能，同时保留微内核的部分架构优势。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "OS四大特征——并发（Concurrence）、共享（Sharing）、虚拟（Virtual）、异步性（Asynchronism）——之间存在深刻内在联系。请回答：<br>（1）（4分）分别给出四大特征的准确定义，并指出哪一个是单处理机OS最重要的特征。<br>（2）（4分）分析\"并发\"与\"共享\"之间的相互依存关系。<br>（3）（6分）场景：进程A和B都要向同一台打印机输出数据，但系统没有任何资源共享控制机制。①会出现什么问题？②哪个特征的缺失导致了这个问题？③OS通常如何解决？<br>（4）（6分）解释\"异步性\"如何成为后续\"并发与同步\"章节的理论基础。请用共享变量的竞态条件例子（counter++）加以说明。", "options": [], "answer": "", "knowledge_point": "模块二：操作系统的四大特征", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><b>（1）四大特征定义</b>：并发：两个或多个事件在同一时间段内发生（宏观并行，微观交替）。<b>并发是单处理机OS最重要特征</b>，是进程调度存在的根本原因。共享：系统资源可供多个并发进程共同使用（分互斥共享和同时访问）。虚拟：把一个物理实体变成若干逻辑对应物（如虚拟CPU、虚拟内存）。异步性：进程以不可预知的速度推进，结果具有不确定性。<br><br><b>（2）并发与共享的相互依存</b>：没有并发→无需共享：若系统只有一个进程运行，独占所有资源，不存在资源竞争，无需共享机制。无共享机制→并发产生冲突：若允许并发但不控制资源访问，多进程可同时操作同一资源（如写同一内存区域、使用同一设备），导致数据损坏或设备输出混乱。<br><br><b>（3）打印机场景分析</b>：①问题：A和B同时向打印机发送数据，打印机会交替接收两个进程的数据流，输出内容相互混杂，两份文档都被破坏。②缺失：共享（Sharing）特征缺失——没有实现对打印机（临界资源）的互斥访问控制。③解决方案：OS通过互斥锁（Mutex）或信号量（Semaphore）机制，确保同一时刻只有一个进程能访问打印机。进程使用前申请锁，使用后释放，其他进程在等待队列中等候。<br><br><b>（4）异步性与竞态条件</b>：异步性原理：进程A在执行任意一条指令后都可能被时钟中断，CPU切换到进程B，这种不可预知的切换点导致结果不确定性。竞态条件示例：共享变量counter=0，进程A和B各执行counter++（实际是三条指令：读→加→写）。若执行序列为：A读(0)→B读(0)→A加(1)→B加(1)→A写(1)→B写(1)，最终counter=1（而非期望的2）。若序列为：A读→加→写→B读→加→写，则counter=2（正确）。同一程序两次运行结果不同，这就是异步性导致的竞态条件——是后续同步机制（互斥锁、信号量、条件变量）要解决的核心问题。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

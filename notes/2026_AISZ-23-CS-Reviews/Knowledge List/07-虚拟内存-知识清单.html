@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第七章：虚拟内存</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第七章：虚拟内存</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s27038890">1. 虚拟内存概念与优点</a></li>
+  <li><a href="#s27889025">1.1 什么是虚拟内存 必考</a></li>
+  <li><a href="#s38908373">1.2 虚拟内存的优点 重点</a></li>
+<li><a href="#s63578549">2. 按需调页（请求调页）</a></li>
+  <li><a href="#s54615450">2.1 从交换到调页的演化 重点</a></li>
+  <li><a href="#s55985549">2.2 改造后的页表项 必考</a></li>
+  <li><a href="#s72857773">2.3 缺页中断处理流程 必考</a></li>
+<li><a href="#s15787005">3. 页面置换算法</a></li>
+  <li><a href="#s20790820">3.1 FIFO（先进先出） 必考</a></li>
+  <li><a href="#s20853522">3.2 OPT（最优页面置换） 必考</a></li>
+  <li><a href="#s48564560">3.3 LRU（最近最少使用） 必考</a></li>
+  <li><a href="#s21279461">3.4 近似LRU：时钟算法（Clock/NRU） 必考</a></li>
+  <li><a href="#s62344859">3.5 置换算法对比 重点</a></li>
+<li><a href="#s36515965">4. 其他相关问题</a></li>
+  <li><a href="#s43965712">4.1 写时复制（Copy-on-Write, CoW） 重点</a></li>
+  <li><a href="#s48664173">4.2 交换空间（Swap Area） 常考</a></li>
+  <li><a href="#s20760021">4.3 工作集与颠簸 必考</a></li>
+  <li><a href="#s31300351">4.4 Belady异常 常考</a></li>
+  <li><a href="#s50427576">4.5 全局置换与局部置换 重点</a></li>
+  <li><a href="#s50471590">4.6 虚拟内存中的程序优化 了解</a></li>
+<li><a href="#s55083846">5. CSAPP：Cache与虚拟地址翻译</a></li>
+  <li><a href="#s65963976">5.1 高速缓存（Cache）组织 重点</a></li>
+  <li><a href="#s25278948">5.2 TLB组织与虚拟地址翻译 必考</a></li>
+  <li><a href="#s29915084">5.3 Core i7 四级页表 常考</a></li>
+  <li><a href="#s77050850">5.4 Linux虚拟内存管理 常考</a></li>
+</ul>
+</div>
+
+<h2 id="s27038890">1. 虚拟内存概念与优点</h2>
+
+<h3 id="s27889025">1.1 什么是虚拟内存 <span class="tag-must">必考</span></h3>
+<p><span class="kp">虚拟内存</span>：使应用程序认为它拥有一个连续的、完整的大地址空间，而实际上程序被分散在物理内存碎片和磁盘上，在需要时进行数据交换。</p>
+<p>实现技术：<span class="exp">段页管理 + 部分加载 + 按需调页 + 换入换出</span></p>
+<p>效果：每个进程独享 CPU 可寻址的整个线性地址空间（32位机4GB），可远大于物理内存。</p>
+<p>基础：<span class="kp">程序局部性原理</span>（80/20原则：80%的时间访问20%的地址），使得只需将当前用到的页保留在内存中。</p>
+
+<h3 id="s38908373">1.2 虚拟内存的优点 <span class="tag-key">重点</span></h3>
+<ul>
+  <li>优点1：地址空间 > 物理内存，用户可编写比物理内存更大的程序，简化编程</li>
+  <li>优点2：内存中可容纳更多进程（并发度高），利用率高；未使用的页（如异常处理代码）从不调入内存</li>
+  <li>优点3：程序启动更快（只需加载初始部分即可开始执行）</li>
+</ul>
+
+<hr>
+<h2 id="s63578549">2. 按需调页（请求调页）</h2>
+
+<h3 id="s54615450">2.1 从交换到调页的演化 <span class="tag-key">重点</span></h3>
+<ul>
+  <li>早期：整个程序必须装入内存才能执行，内存不足则无法运行</li>
+  <li>进程级交换：内存不足时以进程为单位换出，颗粒度太大</li>
+  <li><span class="kp">调页（惰性交换）</span>：以页为单位换入换出</li>
+  <li><span class="kp">请求调页（按需调页）</span>：只有进程真正访问某页时才将其调入，未访问的页可能直到程序结束也不调入</li>
+</ul>
+
+<h3 id="s55985549">2.2 改造后的页表项 <span class="tag-must">必考</span></h3>
+<p>页表项增加<span class="kp">有效/无效位（Present位，P位）</span>：</p>
+<ul>
+  <li>P=1：页在物理内存中，页表项存储物理页框号</li>
+  <li>P=0：页不在内存中，页表项存储磁盘位置信息（如swap分区的扇区号）</li>
+</ul>
+<p>其他重要位：<span class="kp">访问位A</span>（MMU在读/写时置1，软件清0）、<span class="kp">修改位D（Dirty）</span>（MMU在写时置1，换出时决定是否写回磁盘）</p>
+<blockquote>易错：页换出后，原来存放页框号的字段改为存储磁盘地址，P位清0，不会清除该字段。</blockquote>
+
+<h3 id="s72857773">2.3 缺页中断处理流程 <span class="tag-must">必考</span></h3>
+<ol>
+  <li>CPU发出访存指令，MMU查页表，发现P位=0</li>
+  <li>MMU产生<span class="kp">缺页中断（Page Fault）</span>，CPU转入缺页中断处理程序</li>
+  <li>中断处理程序从磁盘读取缺页内容</li>
+  <li>在物理内存中选一个空闲页框（若无空闲则先置换）</li>
+  <li>将磁盘上的页数据读入该页框，修改页表项（P位=1，填入页框号）</li>
+  <li>重新执行引起缺页的指令（需硬件支持保存EPC）</li>
+</ol>
+<blockquote>易错：缺页处理完成后必须重新执行（而不是继续执行）引发缺页的那条指令。</blockquote>
+
+<hr>
+<h2 id="s15787005">3. 页面置换算法</h2>
+
+<h3 id="s20790820">3.1 FIFO（先进先出） <span class="tag-must">必考</span></h3>
+<p>淘汰最早调入内存的页面。实现简单，但性能不佳。</p>
+<p>示例（3帧，引用序列 A B C A B D A D B C B）：FIFO 产生 <strong>7次</strong>缺页</p>
+<p>缺点：可能淘汰频繁使用的页（"不合适"）；存在 <span class="kp">Belady异常</span>（增加帧数缺页反而增多）</p>
+
+<h3 id="s20853522">3.2 OPT（最优页面置换） <span class="tag-must">必考</span></h3>
+<p>淘汰<span class="kp">未来最远时才会使用</span>的页。理论最优，缺页数最少，由 Belady 于1966年提出。</p>
+<p>示例（同上）：OPT 产生 <strong>5次</strong>缺页（< FIFO的7次）</p>
+<p>缺点：需要预知未来访问序列，<span class="exp">实际不可实现</span>，仅作为评价基准。</p>
+<p>用途：用过去的历史预测未来 --> 启发 LRU 算法。</p>
+
+<h3 id="s48564560">3.3 LRU（最近最少使用） <span class="tag-must">必考</span></h3>
+<p>淘汰<span class="kp">最近最长时间未使用</span>的页（OPT的可实现近似，用过去预测未来）。</p>
+<p>示例（同上）：LRU 产生 <strong>5次</strong>缺页（= OPT）</p>
+<p><strong>准确实现：</strong></p>
+<ul>
+  <li><span class="kp">计数器法</span>：每次页引用时全局计数器加1，将值写入页表项。置换时选计数最小的页。代价大（每次访问需修改时间戳，需找最小值），几乎不用。</li>
+  <li><span class="kp">页码栈法</span>：维护页码栈，每次引用将页号移到栈顶，栈底即为LRU页，直接替换。代价仍大，实际使用少。</li>
+</ul>
+<p><strong>LRU 属于栈式算法</strong>，满足 M(m,r) ⊆ M(m+1,r)，不会出现 Belady 异常。</p>
+
+<h3 id="s21279461">3.4 近似LRU：时钟算法（Clock/NRU） <span class="tag-must">必考</span></h3>
+<p>用<span class="kp">引用位（Reference bit）</span>代替精确时间戳，将"何时使用"简化为"是否最近使用过"。</p>
+<p><strong>简单Clock算法（二次机会算法，SCR）：</strong></p>
+<ul>
+  <li>所有帧组成循环队列，每帧维护引用位 R</li>
+  <li>访问某页时，硬件自动将 R 置1</li>
+  <li>缺页时：扫描循环队列，R=1则清0继续扫描；R=0则淘汰该页，指针移到下一位置</li>
+</ul>
+<p>示例（同上）：Clock 产生 <strong>7次</strong>缺页（= FIFO，因为样本中所有页引用位都被置1后退化为FIFO）</p>
+<p>实际上Clock是公认的很好的近似LRU算法，在真实工作负载下性能接近LRU。</p>
+<p><strong>改进型Clock（双指针）：</strong>指针1选择淘汰页（慢），指针2定时清除R位（快）；避免记录太长历史信息退化为FIFO。</p>
+<p><strong>改进型Clock（4状态）：</strong>结合访问位A和修改位M，优先淘汰A=0,M=0的页（未访问未修改，换出代价最低）。</p>
+
+<h3 id="s62344859">3.5 置换算法对比 <span class="tag-key">重点</span></h3>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>算法</th><th>策略</th><th>缺页数（示例3帧）</th><th>可实现</th><th>Belady异常</th></tr>
+  <tr><td>FIFO</td><td>淘汰最早调入的页</td><td>7</td><td>是</td><td>有</td></tr>
+  <tr><td>OPT</td><td>淘汰未来最远使用的页</td><td>5（最少）</td><td>否</td><td>无（栈式）</td></tr>
+  <tr><td>LRU</td><td>淘汰最近最长未用的页</td><td>5</td><td>代价大</td><td>无（栈式）</td></tr>
+  <tr><td>Clock/NRU</td><td>近似LRU（引用位）</td><td>接近LRU</td><td>是（高效）</td><td>通常无</td></tr>
+</table>
+
+<hr>
+<h2 id="s36515965">4. 其他相关问题</h2>
+
+<h3 id="s43965712">4.1 写时复制（Copy-on-Write, CoW） <span class="tag-key">重点</span></h3>
+<p>fork() 创建子进程时，父子进程<span class="kp">共享</span>同一份物理页，页表项标记为只读。</p>
+<p>当任意进程尝试写入共享页时，触发保护故障，内核复制该页，两进程各自拥有独立副本，再完成写操作。</p>
+<p>优点：延迟拷贝（可能永远不需要复制），加速进程创建。</p>
+
+<h3 id="s48664173">4.2 交换空间（Swap Area） <span class="tag-freq">常考</span></h3>
+<p>换出的页面存储在磁盘的<span class="kp">交换区</span>：</p>
+<ul>
+  <li>基于文件系统：Windows的 pagefile.sys</li>
+  <li>独立磁盘分区（RAW）：Linux的 swap partition（不需要文件系统结构）</li>
+</ul>
+
+<h3 id="s20760021">4.3 工作集与颠簸 <span class="tag-must">必考</span></h3>
+<p><span class="kp">工作集（Working Set）</span>：进程最近N次内存引用中访问的不同页面集合，是程序局部性的近似。</p>
+<p>工作集分配策略：固定分配（平均/比例/优先级）；可变分配（根据缺页率动态调整，性能更好）。</p>
+<p><span class="kp">颠簸（Thrashing）</span>：多个进程对物理内存的总需求超过可用量，导致频繁缺页置换，CPU利用率骤降，进程不断等待调页。</p>
+<p>颠簸成因：CPU利用率低 --> OS增加进程 --> 缺页率升高 --> CPU利用率更低 --> 恶性循环。</p>
+<p>防止颠簸：给每个进程分配足够多的帧（基于工作集模型或PFF页错误率）；必要时换出部分进程。</p>
+<blockquote>易错：所有置换策略都不能完全避免颠簸，颠簸是系统级问题，根本原因是总需求超过总供给。</blockquote>
+
+<h3 id="s31300351">4.4 Belady异常 <span class="tag-freq">常考</span></h3>
+<p>对某些页面置换算法（如FIFO），<span class="kp">增加分配的帧数，缺页次数反而增加</span>的异常现象。</p>
+<p>经典例子：引用序列 1,2,3,4,1,2,5,1,2,3,4,5；FIFO 3帧9次缺页，4帧10次缺页。</p>
+<p><span class="kp">栈式算法</span>（满足 M(m,r) ⊆ M(m+1,r)）不会出现 Belady 异常，LRU 和 OPT 是栈式算法；FIFO 不是。</p>
+
+<h3 id="s50427576">4.5 全局置换与局部置换 <span class="tag-key">重点</span></h3>
+<ul>
+  <li><span class="kp">局部置换</span>：进程只能淘汰自己的页面，保护性好、公平，但单进程缺页不能从全局获益</li>
+  <li><span class="kp">全局置换</span>：实现简单，可以淘汰任何进程的页面；但一个频繁缺页的进程会疯狂置换其他进程的页面，不公平</li>
+</ul>
+
+<h3 id="s50471590">4.6 虚拟内存中的程序优化 <span class="tag-info">了解</span></h3>
+<ul>
+  <li>代码优化：使热点代码（80%执行时间对应的20%代码）紧凑、集中，减少跨页访问</li>
+  <li>数据优化：将会一起访问的数据放在同一页或相邻页（如链表节点就近分配），减少缺页次数</li>
+</ul>
+
+<hr>
+<h2 id="s55083846">5. CSAPP：Cache与虚拟地址翻译</h2>
+
+<h3 id="s65963976">5.1 高速缓存（Cache）组织 <span class="tag-key">重点</span></h3>
+<p>Cache参数：(S, E, B) -- S=组数(2^s)，E=每组行数，B=块大小(2^b字节)，容量 C=S×E×B</p>
+<p>物理地址分解：[标记(t位) | 组索引(s位) | 块偏移(b位)]</p>
+<p>查找过程：① 用s位选组 --> ② 将t位与组内所有行的标记比较 --> ③ 有效位=1且标记匹配则命中，取偏移处数据</p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>映射方式</th><th>特点</th><th>适用</th></tr>
+  <tr><td><span class="kp">直接映射（E=1）</span></td><td>速度快，冲突率高，不需要替换算法</td><td>大容量Cache</td></tr>
+  <tr><td><span class="kp">组相联（E=2,4...）</span></td><td>速度折中，冲突率低，需要替换算法（LRU等）</td><td>各种容量</td></tr>
+  <tr><td><span class="kp">全相联（E=所有行）</span></td><td>冲突率=0，硬件复杂，成本高</td><td>小容量（如TLB）</td></tr>
+</table>
+<p>Intel Core i7 L1 Cache：32KB，8路组相联（E=8），64字节/块（b=6），64组（s=6）</p>
+
+<h3 id="s25278948">5.2 TLB组织与虚拟地址翻译 <span class="tag-must">必考</span></h3>
+<p>TLB地址字段：虚拟地址拆分为 [VPN(虚拟页号) | VPO(虚拟页偏移)]</p>
+<p>VPN进一步拆分为 [TLBT(TLB标记) | TLBI(TLB索引)] 用于查找TLB</p>
+<p>TLB通常采用<span class="kp">全相联或组相联</span>，容量64~1024条（TLB对冲突容忍度极低，宁增延迟也要避免未命中）</p>
+<p>完整翻译流程（TLB命中）：VA --> VPN/VPO拆分 --> TLB查找命中 --> 得PPN --> 物理地址=PPN+PPO --> 查L1 Cache</p>
+<p>TLB未命中时：额外访问内存中的页表 --> 将PTE装入TLB --> 继续</p>
+
+<h3 id="s29915084">5.3 Core i7 四级页表 <span class="tag-freq">常考</span></h3>
+<p>48位虚拟地址格式：[VPN1(9) | VPN2(9) | VPN3(9) | VPN4(9) | VPO(12)]</p>
+<p>CR3 --> L1页表(全局目录) --> L2页表(上层目录) --> L3页表(中层目录) --> L4页表 --> 物理页</p>
+<p>每个条目覆盖范围：L1=512GB，L2=1GB，L3=2MB，L4=4KB</p>
+<p>PTE关键字段：P（存在位），R/W（读写权限），U/S（用户/内核），A（访问位），D（修改位，仅L4），XD（禁止执行）</p>
+
+<h3 id="s77050850">5.4 Linux虚拟内存管理 <span class="tag-freq">常考</span></h3>
+<p><span class="kp">VMA（vm_area_struct）</span>：描述进程虚拟地址空间中的一个连续区域，包含 vm_start/vm_end/vm_prot/vm_flags 等字段。</p>
+<p>内存映射（mmap）：在进程虚拟地址空间与某个对象之间建立关联：</p>
+<ul>
+  <li>普通文件：.text/.data 段，按需调页</li>
+  <li>匿名文件：堆、栈、.bss段，初始全零，第一次引用时分配全零物理页</li>
+</ul>
+<p>fork() 的内存映射：父子进程共享所有页（标记为CoW只读），写时才复制，加速创建。</p>
+<p>execve() 的步骤：删除旧用户区域 --> 创建新VMA（代码/数据映射到目标文件，bss/栈映射到匿名文件）--> 设置PC指向入口点。</p>
+
+
+
+</body>
+</html>

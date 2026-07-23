@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第五章：CPU调度与程序优化</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第五章：CPU调度与程序优化</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "在以下CPU调度算法中，平均等待时间最短的是（同时到达时）？", "options": ["先到先服务（FCFS）", "最短作业优先（SJF）", "轮询（RR，时间片=1ms）", "优先级调度（静态优先级）"], "answer": 1, "knowledge_point": "调度算法性能比较", "diagnosis_hint": "混淆SJF与FCFS的性能特点", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：SJF可以数学证明——对同时到达的作业，按CPU区间从小到大调度时，平均等待时间最小（交换相邻两个作业的顺序可以验证这一点）。FCFS按到达顺序，长作业会阻塞后续短作业（护航效应）。", "pitfall": "SJF最优仅对同时到达的作业成立；若作业陆续到达，需要使用SRJF才能达到最优。"}, {"type": "choice", "points": 2, "question": "关于RR（轮询）调度算法中时间片大小的说法，正确的是？", "options": ["时间片越小，吞吐量越大", "时间片越大，响应时间越短", "时间片无穷大时，RR退化为FCFS", "时间片大小不影响上下文切换次数"], "answer": 2, "knowledge_point": "RR调度时间片设置", "diagnosis_hint": "不清楚时间片大小与各指标的关系", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：当时间片大到足以容纳所有进程的CPU区间时，每个进程只调度一次，效果等同于FCFS。时间片越小，上下文切换越频繁，吞吐量反而下降；时间片越大，响应时间越长（队列末尾的进程等待时间增加）。", "pitfall": "FCFS是RR的特例（时间片→∞），而不是SJF的特例。"}, {"type": "choice", "points": 2, "question": "以下关于进程调度的说法，错误的是？", "options": ["时间片用完后，进程由运行态变为就绪态", "抢占式调度中，出现更高优先级进程时当前进程被迫让出CPU", "非抢占式调度适用于大多数现代操作系统", "进程因等待I/O时，由运行态变为阻塞态"], "answer": 2, "knowledge_point": "抢占式与非抢占式调度", "diagnosis_hint": "混淆非抢占式与现代OS的使用场景", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：大多数现代操作系统采用<strong>抢占式</strong>调度，因为需要保证交互响应时间和公平性。非抢占式调度主要用于早期多道批处理系统。A、B、D均正确描述。", "pitfall": "时间片用完 --> 就绪态（不是阻塞态）；等待I/O --> 阻塞态，这是两种不同的状态转换。"}, {"type": "choice", "points": 2, "question": "在指数平均法预测CPU区间中，τ_{n+1} = α·t_n + (1-α)·τ_n，当 α = 0 时，其行为是？", "options": ["只使用最近一次CPU区间，完全忽略历史", "完全忽略近期，始终使用初始预测值τ_0", "对历史和近期各取50%权重", "预测值始终等于所有历史CPU区间的平均值"], "answer": 1, "knowledge_point": "CPU区间预测指数平均法", "diagnosis_hint": "混淆α=0和α=1的含义", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：当α=0时，τ_{n+1} = 0·t_n + 1·τ_n = τ_n，预测值永远不更新，始终等于初始值τ_0。α=1时才是只看当前（τ_{n+1} = t_n）。通常取α=0.5以平衡历史与近期。", "pitfall": "α=0忽略近期（不更新），α=1忽略历史（只看当前），方向容易记反。"}, {"type": "choice", "points": 2, "question": "关于多级反馈队列（MLFQ），以下说法错误的是？", "options": ["任务可以在不同优先级队列之间移动", "使用CPU时间过多的任务会被降到低优先级队列", "等待时间过长的任务会被提升到高优先级队列（老化）", "MLFQ是所有调度算法中实现最简单的"], "answer": 3, "knowledge_point": "多级反馈队列调度", "diagnosis_hint": "对MLFQ复杂度判断有误", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：MLFQ是<strong>最通用但也是最复杂</strong>的CPU调度算法，需要确定队列数目、每队调度算法、升降队列策略等多个参数。A、B、C均是MLFQ的正确特性。", "pitfall": "MLFQ复杂度最高，不是最简单，这是教材原文明确指出的。"}, {"type": "choice", "points": 2, "question": "以下哪种技术可以有效解决优先级调度中的饥饿问题？", "options": ["增大时间片", "将所有进程改为同等优先级", "老化（Aging）：随等待时间增长动态提升优先级", "改用FCFS调度算法"], "answer": 2, "knowledge_point": "优先级调度与饥饿", "diagnosis_hint": "不了解老化技术", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：老化技术是解决饥饿的标准方法——任务等待时间越长，其优先级越高，最终必然能获得CPU。MIT的IBM 7094曾发现一个1967年提交、等到1973年关机都未运行的进程，正是饥饿问题的真实案例。", "pitfall": "饥饿的根本原因是低优先级任务被高优先级任务持续抢占，老化是动态调整而非固化优先级。"}, {"type": "choice", "points": 2, "question": "下列关于代码优化妨碍因素的描述，正确的是？", "options": ["编译器可以自动识别并消除所有函数副作用带来的优化障碍", "C语言中内存别名问题是指同一变量被两个不同名字引用", "内联函数可以帮助编译器分析函数逻辑，突破函数调用的优化障碍", "内存别名问题仅在指针运算中存在，数组访问不存在此问题"], "answer": 2, "knowledge_point": "妨碍优化的因素", "diagnosis_hint": "对函数调用和内存别名障碍的理解不准确", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：使用inline内联函数后，编译器可以直接分析函数体逻辑，不再将其视为黑盒，从而可以进行代码移动等优化。A错误：编译器将函数视为黑盒，无法识别副作用。B错误：内存别名是指两个<strong>不同</strong>的内存引用指向<strong>同一</strong>位置。D错误：数组访问同样存在别名问题（如a和b指向同一内存区域）。", "pitfall": "内存别名的定义：两个不同的内存引用 --> 同一位置，而非同一变量两个名字。"}, {"type": "choice", "points": 2, "question": "对于2x1循环展开 x = (x OP d[i]) OP d[i+1]，为什么对大多数运算没有性能提升？", "options": ["循环次数减少导致边界检查开销增大", "括号顺序使得计算仍然存在顺序依赖，无法突破延迟界限", "展开后寄存器不足，产生了内存溢出", "2x1展开会导致编译器无法优化"], "answer": 1, "knowledge_point": "循环展开与顺序依赖", "diagnosis_hint": "不理解为什么2x1不能突破延迟界限", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：(x OP d[i]) OP d[i+1] 中，第二个OP必须等待第一个OP完成（因为x依赖上次结果）。这种顺序依赖使得每次迭代的两个运算无法并行，CPE仍然受延迟界限约束。只有2x1a重组（x = x OP (d[i] OP d[i+1])）才能让d[i] OP d[i+1]先行计算，打破依赖链。", "pitfall": "循环展开≠突破延迟界限，必须同时打破顺序依赖（重组或分离累加器）。"}, {"type": "choice", "points": 2, "question": "在Haswell CPU上，整数乘法延迟=3、容量=1，浮点乘法延迟=5、容量=2。要使Double FP乘法达到吞吐量界限（CPE=0.50），至少需要多少个累加器K？", "options": ["3", "5", "8", "10"], "answer": 3, "knowledge_point": "循环展开与累加器数量", "diagnosis_hint": "不知道K的计算公式", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：要达到吞吐量界限，需要 K ≥ 容量 × 延迟 = 2 × 5 = 10。只有K≥10个累加器时，才能让功能单元的流水线始终保持满载，从而达到吞吐量界限CPE=0.50。教材数据证实K=10时CPE≈0.51，接近理论界限。", "pitfall": "公式是 K ≥ 容量(C) × 延迟(L)，不是容量+延迟，也不是容量或延迟单独。"}, {"type": "choice", "points": 2, "question": "SIMD指令集（如AVX2）对性能提升的主要原理是？", "options": ["提高了CPU的时钟频率", "减少了函数调用的开销", "一条指令同时对多个数据执行相同操作（单指令多数据）", "消除了内存别名，使编译器能够更好地优化"], "answer": 2, "knowledge_point": "SIMD向量化", "diagnosis_hint": "对SIMD概念理解不清", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：SIMD（Single Instruction Multiple Data）的核心是用一条指令处理多个数据。AVX2的256位YMM寄存器可以同时处理8个32位浮点或4个64位浮点，使吞吐量提升4-8倍，这是SIMD性能提升的本质原因。", "pitfall": "SIMD与时钟频率无关，是数据级并行而非指令级并行（乱序执行是指令级并行）。"}, {"type": "tf", "points": 1, "question": "SJF调度算法保证在任何情况下（包括作业陆续到达时）都能实现最小的平均等待时间。", "options": [], "answer": false, "knowledge_point": "SJF调度性能", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：SJF只在所有作业<strong>同时到达</strong>时能保证最小平均等待时间。当作业陆续到达时，需要使用<strong>SRJF（最短剩余作业优先，即SJF的抢占版本）</strong>才能实现最优。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "轮询（RR）调度中，时间片用完后进程状态从运行态变为阻塞态。", "options": [], "answer": false, "knowledge_point": "进程状态转换", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：时间片用完后，进程从运行态变为<strong>就绪态</strong>，而非阻塞态。阻塞态是进程等待某一事件（如I/O完成）时的状态。这是教材习题中的经典易错点。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "FCFS调度算法是RR调度算法时间片趋于无穷大时的特殊情况。", "options": [], "answer": true, "knowledge_point": "调度算法关系", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：当RR的时间片大到足以包含所有进程的完整CPU区间时，每个进程只会被调度一次且不会被中断，行为等同于FCFS。教材原文：FCFS是RR的特例，SJF是优先级调度的特例。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "CPU-I/O区间周期中，CPU区间的长度呈指数衰减分布，即短CPU区间出现的概率极高。", "options": [], "answer": true, "knowledge_point": "CPU-I/O区间周期", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：实验证明，进程中短CPU区间出现的几率极高，频率随区间长度增加呈指数衰减。这也是为什么SJF/SRJF能有效优化大多数实际场景的原因。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "老化（Aging）技术通过随时间推移降低高优先级进程的优先级来解决饥饿问题。", "options": [], "answer": false, "knowledge_point": "优先级调度与饥饿", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：老化技术是通过随等待时间增长<strong>提升低优先级进程的优先级</strong>来解决饥饿问题，而不是降低高优先级进程的优先级。两者效果类似但方向不同，通常实现时采用提升低优先级进程的方式。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "将循环中每次返回值相同的函数调用移到循环外（代码移动），编译器通常可以自动完成这个优化。", "options": [], "answer": false, "knowledge_point": "妨碍优化的因素——函数调用", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：编译器将函数调用视为黑盒，因为函数可能有副作用（修改全局变量）或依赖外部状态，无法确定每次调用返回值是否相同。因此编译器<strong>不敢</strong>自动做这种优化，需要程序员手动移动，或使用inline内联函数。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "CPE（每元素周期数）的延迟界限等于单次操作所需的时钟周期数，是顺序依赖时性能的下限。", "options": [], "answer": true, "knowledge_point": "CPE性能指标", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：延迟界限 = 单次操作的延迟周期数。当计算存在顺序依赖（如每次迭代依赖上次结果）时，无论怎么优化，CPE不会低于延迟界限。要突破延迟界限，必须打破顺序依赖（循环重组或分离累加器）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "2x1a重组展开（x = x OP (d[i] OP d[i+1])）能突破顺序依赖，是因为d[i] OP d[i+1]不需要依赖上次迭代的x值。", "options": [], "answer": true, "knowledge_point": "循环展开与重组", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：在2x1a中，d[i] OP d[i+1] 可以独立于x先行计算，与x的更新构成两条并行流水线。相比2x1中 (x OP d[i]) OP d[i+1] 必须严格按顺序，2x1a打破了单链依赖，使CPE降至约延迟界限/2。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "彩票调度算法中，持有更多彩票的进程在每一个时间片内一定会被调度。", "options": [], "answer": false, "knowledge_point": "彩票调度算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：彩票调度是概率性的，持有更多彩票的进程<strong>在长期内</strong>获得更多CPU时间，但在每一个具体时间片内，调度是随机的，持有较少彩票的进程也可能被选中。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "SIMD向量化的性能提升来源于提高了每条指令的时钟频率，使得处理器运行更快。", "options": [], "answer": false, "knowledge_point": "SIMD向量化", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（✗）<br><br><strong>推理过程</strong>：SIMD的性能提升来自<strong>数据级并行</strong>，即一条指令同时操作多个数据（如256位YMM寄存器一次处理8个单精度浮点）。时钟频率本身并未提高，而是每条指令的有效工作量成倍增加。", "pitfall": ""}, {"type": "short", "points": 6, "question": "请说明CPU调度中响应时间与周转时间的区别，并给出各自的计算公式。举例说明为什么在交互式系统中更关注响应时间而非周转时间。", "options": [], "answer": "", "knowledge_point": "调度评价指标", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>响应时间</strong> = 首次运行时刻 - 到达时刻<br><span class='exp'>衡量任务从提交到首次获得CPU的等待时长，反映系统对用户输入的第一反应速度。</span><br><br><strong>周转时间</strong> = 完成时刻 - 到达时刻<br><span class='exp'>衡量任务从提交到完全执行结束的总时长，反映任务从头到尾的完成效率。</span><br><br><strong>交互式系统更关注响应时间</strong>：例如用户在文本编辑器中输入字符，如果响应时间超过100ms，用户就会感知到明显延迟，体验变差。但该任务真正'完成'（周转时间）可能是用户关闭文档时，短则几分钟、长则数小时——用户并不关心任务何时'完成'，而关心每次操作是否得到及时反馈。因此，交互式系统优先优化响应时间。", "pitfall": "响应时间 ≠ 首次运行时刻，是首次运行时刻减去到达时刻的差值。"}, {"type": "short", "points": 6, "question": "解释编译器优化中'内存别名（Memory Aliasing）'问题的含义，说明它如何妨碍编译器优化，并给出程序员应对此问题的解决方法。", "options": [], "answer": "", "knowledge_point": "妨碍优化的因素——内存别名", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>内存别名含义</strong>：两个不同的内存引用（如指针 a 和 b）指向内存中的同一位置。C语言因允许地址运算和直接访问内存结构，很容易产生别名问题。<br><br><strong>妨碍优化的机制</strong>：以 sum_rows1 为例，若 b[i] 与 a 数组的某行重叠，则每次循环对 b[i] 的修改可能意外改变 a 中后续元素的值。编译器无法确定 a 和 b 是否重叠，因此不敢将 b[i] 的读写优化为寄存器操作，必须每次都访问内存，导致内层循环性能低下。<br><br><strong>解决方法</strong>：引入局部变量在循环中累积结果（如 double val = 0; for(...) val += ...; b[i] = val;）。val 是局部变量，没有别名风险，编译器可以将其保留在寄存器中，完全避免内层循环的内存访问，大幅提升性能。", "pitfall": "内存别名不是变量重名，而是不同引用指向同一物理内存位置。"}, {"type": "short", "points": 6, "question": "什么是延迟界限（Latency Bound）和吞吐量界限（Throughput Bound）？二者分别是什么情况下的CPE下限？如何通过循环优化突破延迟界限？", "options": [], "answer": "", "knowledge_point": "CPE性能指标与循环优化", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>延迟界限</strong>：当计算存在严格顺序依赖（每次迭代的结果依赖上次迭代）时，CPE不能低于单次操作的延迟周期数。例如浮点乘法延迟=5，则顺序累乘的CPE下限为5.00。<br><br><strong>吞吐量界限</strong>：CPE的终极下限，由功能单元的处理能力决定：吞吐量界限 = 1/（容量/发射时间）。它代表处理器在硬件层面能达到的最大速度，任何实现都不能超越。<br><br><strong>突破延迟界限的方法</strong>：<br>1. <strong>2x1a重组展开</strong>：x = x OP (d[i] OP d[i+1])，让d[i] OP d[i+1]先独立计算，打破依赖链，CPE≈延迟界限/2。<br>2. <strong>2x2分离累加器</strong>：x0和x1各自独立累积奇偶元素，两条并行流水线，同样达到CPE≈延迟界限/2。<br>要达到吞吐量界限，需满足 K ≥ 容量 × 延迟，K为累加器数量。", "pitfall": "延迟界限是顺序依赖时的限制；吞吐量界限是硬件容量的终极限制，通常更低。"}, {"type": "short", "points": 6, "question": "说明多级反馈队列（MLFQ）调度算法的工作原理，包括任务如何在队列间移动，以及它解决了哪些单级队列调度算法（如FCFS、SJF、RR）的不足。", "options": [], "answer": "", "knowledge_point": "多级反馈队列调度", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>工作原理</strong>：MLFQ将任务按优先级分入多个队列（如队列0=实时进程，队列1=系统进程，队列2=交互进程，队列3=批处理进程），始终从最高优先级非空队列调度。允许任务在队列间移动：<br>- <strong>降级</strong>：任务占用CPU时间过多时，移入低优先级队列；<br>- <strong>升级（老化）</strong>：任务在低优先级队列等待过长时，提升到高优先级队列。<br><br><strong>解决单级队列的不足</strong>：<br>- FCFS/SJF需要O(n)搜索且是单队列，MLFQ多队列减少搜索范围；<br>- SJF需要预知CPU区间，MLFQ通过动态观察行为（用多少CPU时间就降级）来隐式估计；<br>- 纯优先级调度存在饥饿，MLFQ的老化机制防止低优先级任务无限等待；<br>- 单一RR无法区分不同类型任务，MLFQ对交互进程（频繁短CPU区间）自然维持在高队列，对批处理进程降到低队列。", "pitfall": "MLFQ的核心创新是动态调整——任务根据行为自动移动队列，无需预知CPU区间。"}, {"type": "essay", "points": 8, "question": "请比较FCFS、SJF和RR三种调度算法在以下5个进程上的调度结果（所有进程同时在t=0到达，时间片q=4ms）。\n\n进程 | CPU区间(ms)\nP1   | 6\nP2   | 8\nP3   | 2\nP4   | 4\nP5   | 5\n\n要求：\n(1) 分别给出三种算法的调度甘特图（进程执行顺序）；\n(2) 计算三种算法的平均等待时间；\n(3) 哪种算法平均等待时间最小？为什么？", "options": [], "answer": "", "knowledge_point": "调度算法计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>进程数据</strong>：P1=6, P2=8, P3=2, P4=4, P5=5（全部t=0到达）<br><br><strong>(1) 甘特图</strong>：<br><strong>FCFS</strong>：P1(0-6) P2(6-14) P3(14-16) P4(16-20) P5(20-25)<br><strong>SJF</strong>：P3(0-2) P4(2-6) P5(6-11) P1(11-17) P2(17-25)<br><strong>RR(q=4)</strong>：P1(0-4) P2(4-8) P3(8-10) P4(10-14) P5(14-18) P1(18-20) P2(20-24) P5(24-25) P2(25-25)→即P1(18-20) P2(20-24) P5(24-25) P2结束于25<br>RR序列：P1(0-4), P2(4-8), P3(8-10完成), P4(10-14完成), P5(14-18), P1(18-20完成), P2(20-24), P5(24-25完成), P2(25-25)→P2在25结束需要最后1ms: P2(24-25完成于25)<br><br><strong>(2) 平均等待时间</strong>：<br>等待时间 = 周转时间 - CPU区间<br><strong>FCFS</strong>：P1等0，P2等6，P3等14，P4等16，P5等20 → 平均=(0+6+14+16+20)/5 = <strong>11.2ms</strong><br><strong>SJF</strong>：P3等0，P4等2，P5等6，P1等11，P2等17 → 平均=(11+17+0+2+6)/5 = <strong>7.2ms</strong><br><strong>RR(q=4)</strong>：P1等(0+14)=14ms中有效=18-6=12，P2=(4+16)=20-8=12... 计算：P1完成20等待=20-6=14; P2完成25等待=25-8=17; P3完成10等待=10-2=8; P4完成14等待=14-4=10; P5完成25等待=25-5=20 → 等待时间=(14+17+8+10+20)/5=<strong>13.8ms</strong><br><br><strong>(3) SJF平均等待时间最小</strong>（7.2ms），因为对同时到达的进程，SJF按CPU区间从小到大排序调度可以数学证明最优：调整任意相邻两个进程的顺序，若存在i&lt;j而p_i&gt;p_j，交换后平均等待时间减小；故按升序排列时最优。", "pitfall": "RR计算等待时间时要注意一个进程可能被调度多次，等待时间 = 完成时刻 - 到达时刻 - CPU区间长度。"}, {"type": "essay", "points": 8, "question": "以下是一段C语言代码，存在性能问题：\n\nvoid process(char *s, double *a, double *b, long n) {\n    for (long i = 0; i < strlen(s); i++) {\n        if (s[i] >= 'A' && s[i] <= 'Z')\n            s[i] += 32;\n    }\n    for (long i = 0; i < n; i++) {\n        b[i] = 0;\n        for (long j = 0; j < n; j++)\n            b[i] += a[i*n + j];\n    }\n}\n\n(1) 指出代码中存在的两类优化障碍，分别说明原因；\n(2) 给出优化后的代码，并说明每处改动对应的优化方法。", "options": [], "answer": "", "knowledge_point": "妨碍优化的因素与优化方法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>(1) 两类优化障碍</strong>：<br><strong>障碍①——函数调用</strong>：第一个循环中 <code>strlen(s)</code> 在每次循环迭代都被调用，但字符串长度不变，返回值始终相同。编译器不敢将其移出循环，因为函数可能有副作用（如修改全局状态）。<br><strong>障碍②——内存别名</strong>：第二个循环中 <code>b[i]</code> 在内层循环中被反复读写。若 a 和 b 的内存区域重叠，修改 b[i] 可能影响 a 后续元素，编译器无法将 b[i] 的读写优化为寄存器操作。<br><br><strong>(2) 优化后代码</strong>：<br><pre><code>void process(char *s, double *a, double *b, long n) {\n    long len = strlen(s);          // ①代码移动：strlen移到循环外\n    for (long i = 0; i < len; i++) {\n        if (s[i] >= 'A' && s[i] <= 'Z')\n            s[i] += 32;\n    }\n    for (long i = 0; i < n; i++) {\n        double val = 0;            // ②局部变量累积：消除内存别名\n        for (long j = 0; j < n; j++)\n            val += a[i*n + j];\n        b[i] = val;                // 循环结束后一次写回\n    }\n}</code></pre><strong>改动说明</strong>：①将 strlen(s) 移到循环外，只计算一次，将算法从O(n²)降至O(n)；②引入局部变量 val 代替 b[i] 在内层循环中累积，编译器可将 val 保留在寄存器，完全避免内层循环的内存读写，大幅提升性能。", "pitfall": "两处优化分别对应两类障碍，改动方向不能混淆：函数调用用代码移动解决，内存别名用局部变量解决。"}, {"type": "essay", "points": 10, "question": "假设有4个进程P0-P3，到达时间和CPU执行时间如下表。系统采用时间片 q=100ms 的RR调度算法。\n\n进程 | 到达时间(ms) | 执行时间(ms)\nP0   | 0            | 250\nP1   | 50           | 170\nP2   | 130          | 75\nP3   | 190          | 100\n\n(1) 给出完整的RR调度甘特图；\n(2) 计算每个进程的周转时间和等待时间；\n(3) 计算平均周转时间和平均等待时间；\n(4) 如果改用FCFS算法，平均等待时间是多少？与RR相比，哪种算法在此场景下响应时间更短？", "options": [], "answer": "", "knowledge_point": "RR调度算法计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>(1) RR甘特图（q=100ms）</strong>：<br>t=0: P0开始（唯一就绪进程）<br>t=100: P0用完时间片，就绪队列=[P1(到达50), P0剩150]，下一个P1<br>t=200: P1用完时间片，就绪队列=[P2(到达130), P3(到达190), P0剩150, P1剩70]，下一个P2<br>t=275: P2完成(只需75ms)，就绪队列=[P3, P0剩150, P1剩70]，下一个P3<br>t=375: P3完成(100ms)，就绪队列=[P0剩150, P1剩70]，下一个P0<br>t=475: P0用完时间片，就绪队列=[P1剩70, P0剩50]，下一个P1<br>t=545: P1完成(剩70ms)，就绪队列=[P0剩50]，下一个P0<br>t=595: P0完成<br><br><strong>甘特图</strong>：P0(0-100) | P1(100-200) | P2(200-275) | P3(275-375) | P0(375-475) | P1(475-545) | P0(545-595)<br><br><strong>(2) 各进程时间计算</strong>：<br>P0：到达0，完成595，周转=595，等待=595-250=<strong>345ms</strong><br>P1：到达50，完成545，周转=495，等待=495-170=<strong>325ms</strong><br>P2：到达130，完成275，周转=145，等待=145-75=<strong>70ms</strong><br>P3：到达190，完成375，周转=185，等待=185-100=<strong>85ms</strong><br><br><strong>(3) 平均值</strong>：<br>平均周转时间 = (595+495+145+185)/4 = <strong>355ms</strong><br>平均等待时间 = (345+325+70+85)/4 = <strong>206.25ms</strong><br><br><strong>(4) FCFS对比</strong>：<br>FCFS顺序：P0(0-250), P1(250-420), P2(420-495), P3(495-595)<br>等待时间：P0=0, P1=200, P2=290, P3=305<br>平均等待时间 = (0+200+290+305)/4 = <strong>198.75ms</strong><br>FCFS平均等待时间(198.75ms) &lt; RR(206.25ms)，但响应时间：P1首次运行FCFS要等到250ms，而RR在100ms时就能调度P1——<strong>RR的响应时间更短</strong>，这是RR在交互式系统中的核心优势。", "pitfall": "RR调度时每个时间片到达前需要检查是否有新进程加入就绪队列；等待时间=周转时间-CPU执行时间，不是完成时刻减到达时刻。"}, {"type": "comprehensive", "points": 20, "question": "【综合优化分析题】\n\n给定以下向量累乘函数（伪代码表示，数据类型为double浮点数，使用Haswell CPU，FP乘法延迟=5，发射=1，容量=2，吞吐量=2）：\n\n// 版本1：基础实现\nvoid combine1(double *a, double *dest, long n) {\n    *dest = 1.0;\n    for (long i = 0; i < n; i++)\n        *dest = *dest * a[i];\n}\n\n// 版本2：局部变量优化\nvoid combine4(double *a, double *dest, long n) {\n    double t = 1.0;\n    for (long i = 0; i < n; i++)\n        t = t * a[i];\n    *dest = t;\n}\n\n// 版本3：2x2分离累加器\nvoid unroll2x2(double *a, double *dest, long n) {\n    double x0 = 1.0, x1 = 1.0;\n    long limit = n - 1;\n    long i;\n    for (i = 0; i < limit; i += 2) {\n        x0 = x0 * a[i];\n        x1 = x1 * a[i+1];\n    }\n    for (; i < n; i++) x0 = x0 * a[i];\n    *dest = x0 * x1;\n}\n\n(1) 分析版本1存在哪些性能问题，版本2解决了哪个问题？\n(2) 版本2的CPE下限是多少（延迟界限）？为什么版本2无法突破这个界限？\n(3) 版本3的CPE理论值是多少？说明版本3如何突破了版本2的限制。\n(4) 要使版本3达到吞吐量界限（CPE=0.50），还需要什么条件？根据公式计算出所需的最小累加器数K。\n(5) 假设再引入SIMD向量化（YMM寄存器256位，每次处理4个double），理论上可以在版本3基础上再提升多少倍？", "options": [], "answer": "", "knowledge_point": "程序优化综合分析", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>(1) 版本1的问题与版本2的改进</strong>：<br>版本1存在<strong>内存别名问题</strong>：内层循环每次迭代都需要读写 *dest（内存地址），若 a 数组与 dest 存在别名（地址重叠），编译器不敢将 *dest 优化到寄存器，每次迭代必须完整的内存读-计算-写操作，CPE高达10+。<br>版本2引入局部变量 t，t 无别名风险，编译器将 t 保留在寄存器中，消除了内层循环的重复内存读写。CPE降至约5.01（接近延迟界限5.00）。<br><br><strong>(2) 版本2的延迟界限和无法突破的原因</strong>：<br>Double FP乘法延迟=5个时钟周期，因此延迟界限=<strong>5.00 CPE</strong>。<br>版本2的循环 t = t * a[i] 存在严格的顺序依赖：每次迭代必须等待上次乘法完成（因为 t 的值依赖前次结果），无法并行执行，CPE不会低于5.00。<br><br><strong>(3) 版本3的理论CPE和突破原理</strong>：<br>版本3 CPE理论值 ≈ 延迟界限/2 = <strong>5.00/2 = 2.50</strong>（实测约2.51）。<br>突破原理：x0 和 x1 是两个<strong>独立的累积变量</strong>，分别处理偶数索引和奇数索引元素，两条依赖链互不干扰。处理器可以同时在流水线中执行 x0*a[i] 和 x1*a[i+1] 的计算（因为x0、x1无依赖关系），将顺序依赖链由1条变为2条并行，故CPE减半。<br><br><strong>(4) 达到吞吐量界限的条件</strong>：<br>Double FP乘法：容量C=2，延迟L=5，吞吐量界限CPE=0.50。<br>公式：K ≥ C × L = 2 × 5 = <strong>10</strong>。<br>需要至少10个独立累加器（10x10展开），才能保证2个乘法功能单元的流水线始终满载，达到CPE=0.50的吞吐量界限。<br><br><strong>(5) SIMD向量化的进一步提升</strong>：<br>YMM寄存器256位，double为64位，每个YMM寄存器可同时处理 256/64 = <strong>4个double</strong>。<br>相对于标量最优（CPE≈0.50），向量化后理论CPE ≈ 0.50/4 = <strong>0.125</strong>，即再提升约<strong>4倍</strong>（实测Double FP乘法向量化约0.16 CPE）。总体相对于未优化版本1，性能提升约40倍以上。", "pitfall": "吞吐量界限的计算公式是 K ≥ 容量×延迟，SIMD的提升倍数等于寄存器宽度/数据类型宽度（256/64=4对double）。"}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

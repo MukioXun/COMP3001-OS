@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第九章：文件系统</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第九章：文件系统</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s51444116">1. 文件与目录结构</a></li>
+  <li><a href="#s11847634">1.1 文件的基本概念 重点</a></li>
+  <li><a href="#s20295602">1.2 盘块的三种分配方式 必考</a></li>
+  <li><a href="#s76839422">1.3 UNIX多级索引（组合方案） 必考</a></li>
+  <li><a href="#s85011704">1.4 树状目录与路径解析 必考</a></li>
+<li><a href="#s26042494">2. 文件系统的实现</a></li>
+  <li><a href="#s62690324">2.1 分区结构（UNIX分区） 必考</a></li>
+  <li><a href="#s10901175">2.2 空闲盘块管理 重点</a></li>
+  <li><a href="#s82605774">2.3 磁盘缓存（Buffer Cache） 重点</a></li>
+  <li><a href="#s15866878">2.4 文件保护 常考</a></li>
+  <li><a href="#s47468528">2.5 容错：RAID 常考</a></li>
+<li><a href="#s25301990">3. EXT2文件系统</a></li>
+  <li><a href="#s69801196">3.1 EXT2磁盘组织 必考</a></li>
+  <li><a href="#s16331268">3.2 inode结构 必考</a></li>
+  <li><a href="#s87295628">3.3 EXT2目录项 重点</a></li>
+  <li><a href="#s53462261">3.4 EXT2多级索引计算 必考</a></li>
+  <li><a href="#s33305084">3.5 EXT4 Extent优化 常考</a></li>
+<li><a href="#s80236302">4. FAT文件系统</a></li>
+  <li><a href="#s39082814">4.1 FAT卷结构 必考</a></li>
+  <li><a href="#s72506882">4.2 FAT表 必考</a></li>
+  <li><a href="#s75789305">4.3 FAT目录项 重点</a></li>
+  <li><a href="#s71159887">4.4 FAT vs EXT2比较 必考</a></li>
+<li><a href="#s81500426">5. 日志文件系统与性能优化</a></li>
+  <li><a href="#s88304644">5.1 文件系统日志（Journal） 常考</a></li>
+  <li><a href="#s41430619">5.2 日志型文件系统LFS 了解</a></li>
+  <li><a href="#s70142100">5.3 EXT4 I/O性能优化 常考</a></li>
+</ul>
+</div>
+
+<h2 id="s51444116">1. 文件与目录结构</h2>
+
+<h3 id="s11847634">1.1 文件的基本概念 <span class="tag-key">重点</span></h3>
+<p><span class="kp">文件</span>：磁盘上有名字的字节序列（named bytes on disk）。用户眼中是连续字符流，文件系统眼中是<span class="kp">磁盘块集合</span>。</p>
+<p>文件系统的核心任务：将<span class="kp">（文件名, 偏移）</span>映射到<span class="kp">磁盘块地址</span>，目标是磁盘访问次数尽量少、空间开销最小。</p>
+<p>文件的物理结构：信息在物理存储器上的存储方式，分三种（见1.2）。<br>
+文件的逻辑结构：用户对信息进行逻辑组织形成的结构，向用户提供逻辑清晰的访问形式。</p>
+
+<h3 id="s20295602">1.2 盘块的三种分配方式 <span class="tag-must">必考</span></h3>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>方式</th><th>FCB中存储</th><th>优点</th><th>缺点</th></tr>
+  <tr><td><span class="kp">连续分配</span></td><td>起始盘块号 + 块数</td><td>简单、支持随机访问</td><td>外部碎片，扩充难</td></tr>
+  <tr><td><span class="kp">链式分配</span></td><td>第一块块号（每块末存下一块号）</td><td>利用率高，易扩充</td><td>只能顺序访问，效率低</td></tr>
+  <tr><td><span class="kp">索引分配</span></td><td>索引块块号</td><td>支持直接访问，无外部碎片</td><td>索引块本身占空间；需解决索引块大小问题</td></tr>
+</table>
+<blockquote>易错：链式分配中每块末尾存放"下一块块号"；FAT文件系统将链表集中存放为文件分配表，属于<span class="exp">显式链接</span>，优于隐式链接。</blockquote>
+
+<h3 id="s76839422">1.3 UNIX多级索引（组合方案） <span class="tag-must">必考</span></h3>
+<p>inode中使用<span class="kp">组合索引</span>：前12项直接索引（直接寻址），第13项一级间接，第14项二级间接，第15项三级间接。</p>
+<p>以1KB块大小、4B块号为例：每块含256条索引。</p>
+<ul>
+  <li>12个直接块：12 KB</li>
+  <li>一级间接：256 x 1KB = 256 KB</li>
+  <li>二级间接：256 x 256 x 1KB = 64 MB</li>
+  <li>三级间接：256 x 256 x 256 x 1KB = 16 GB</li>
+</ul>
+<blockquote>易错：索引块本身存放在数据块区，不占inode空间；inode设计固定大小以便快速查找。</blockquote>
+
+<h3 id="s85011704">1.4 树状目录与路径解析 <span class="tag-must">必考</span></h3>
+<p>文件系统用<span class="kp">树状（k叉树）目录</span>组织文件，解决查找困难问题。</p>
+<p>目录是一种特殊文件，其数据内容是<span class="kp">&lt;文件名, FCB指针（inode号）&gt;</span>的映射表，而非完整FCB。原因：目录解析频繁，FCB尺寸大，存完整FCB会使目录文件很大、效率低。</p>
+<p>路径解析示例（/my/data/a）：</p>
+<ol>
+  <li>从根目录FCB读取根目录数据块，查找名为"my"的目录项，得其inode号</li>
+  <li>读取my目录的FCB及数据块，查找"data"</li>
+  <li>读取data目录的FCB及数据块，查找"a"，返回文件a的FCB</li>
+</ol>
+<p>根目录FCB存放在磁盘固定位置，OS初始化时读入内存常驻。</p>
+
+<hr>
+<h2 id="s26042494">2. 文件系统的实现</h2>
+
+<h3 id="s62690324">2.1 分区结构（UNIX分区） <span class="tag-must">必考</span></h3>
+<p>典型UNIX分区布局（从低地址到高地址）：</p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>区域</th><th>内容</th></tr>
+  <tr><td><span class="kp">引导块</span></td><td>引导OS信息；无OS则为空</td></tr>
+  <tr><td><span class="kp">超级块（Super Block）</span></td><td>分区块数、块大小、空闲块数量/指针、空闲FCB数量/指针等</td></tr>
+  <tr><td><span class="kp">索引节点数组（inode数组）</span></td><td>所有文件的文件头连续存放；UNIX root目录inode号为2</td></tr>
+  <tr><td><span class="kp">数据块</span></td><td>文件内容、目录内容</td></tr>
+</table>
+<blockquote>易错：超级块在UFS中称为超级块，在NTFS中存于主控文件表（MFT）；EXT2中每个块组都有超级块备份。</blockquote>
+
+<h3 id="s10901175">2.2 空闲盘块管理 <span class="tag-key">重点</span></h3>
+<ul>
+  <li><span class="kp">空闲位图（位向量）</span>：每一位对应一个盘块，0=空闲，1=占用。可快速分配连续块组，但位图可能很大（1GB/1KB = 1M位 = 128KB位图）。</li>
+  <li><span class="kp">空闲链表</span>：将空闲盘块用指针链接。分配单块高效，分配多块需遍历。幸运的是大多数申请只需一两个空闲块。</li>
+</ul>
+
+<h3 id="s82605774">2.3 磁盘缓存（Buffer Cache） <span class="tag-key">重点</span></h3>
+<p>在内存中缓存磁盘盘块，利用<span class="kp">局部性</span>减少磁盘访问。访问流程：</p>
+<ol>
+  <li>首先查缓存（Hash表组织）</li>
+  <li>缓存未命中 --> 访问文件系统（磁盘）</li>
+  <li>将盘块放入缓存（替换算法：LRU）</li>
+</ol>
+<p>写策略：<span class="kp">延迟写</span>（提高效率，断电丢失风险）或<span class="kp">直接写（同步写）</span>。<code>fsync()</code>系统调用可绕过缓冲机制直接写磁盘。</p>
+
+<h3 id="s15866878">2.4 文件保护 <span class="tag-freq">常考</span></h3>
+<p>文件权限（r/w/x）存放在FCB/inode中。权限分三类：owner(uid)、group(gid)、other。</p>
+<p>访问控制流程：进程发起文件访问 --> 检查PCB中的uid/gid --> 对比inode中的权限位 --> 允许/拒绝。</p>
+<p>权限字符串示例：<code>drwxrwxr-x root staff test/</code>（d=目录，rwx各代表读写执行）。</p>
+
+<h3 id="s47468528">2.5 容错：RAID <span class="tag-freq">常考</span></h3>
+<p><span class="kp">RAID（Redundant Arrays of Inexpensive Disks）</span>：通过冗余提高可靠性。</p>
+<ul>
+  <li><span class="kp">RAID1（镜像）</span>：每次写两个磁盘，读时若磁盘A出错则读磁盘B，磁盘利用率50%。</li>
+  <li><span class="kp">RAID5+</span>：校验数据（XOR）分布在多个盘上，任意一个磁盘故障可从其他盘恢复，磁盘利用率高于RAID1。</li>
+</ul>
+<blockquote>易错：RAID5校验块分散到各磁盘的目的是<span class="exp">避免校验块所在磁盘成为写操作瓶颈</span>。</blockquote>
+
+<hr>
+<h2 id="s25301990">3. EXT2文件系统</h2>
+
+<h3 id="s69801196">3.1 EXT2磁盘组织 <span class="tag-must">必考</span></h3>
+<p>EXT2将分区划分为若干<span class="kp">块组（Block Group）</span>，每个块组包含：</p>
+<ol>
+  <li><span class="kp">超级块</span>：整个分区文件系统信息（多个块组中冗余备份，仅块组0必须读入内存）</li>
+  <li><span class="kp">块组描述符GDT</span>：描述所有块组属性，每个描述符32字节</li>
+  <li><span class="kp">数据块位图</span>：标记当前块组内各数据块是否空闲（1个4KB位图块可标记32K个块，128MB/块组）</li>
+  <li><span class="kp">inode位图</span>：标记各inode是否使用（1个4KB位图块标记32K个inode）</li>
+  <li><span class="kp">inode表</span>：当前块组所有inode连续存放（每个inode固定128B）</li>
+  <li><span class="kp">数据块</span>：文件/目录数据</li>
+</ol>
+<blockquote>易错：EXT2的inode数量在格式化时固定，因此每个块组的最大文件数受限。</blockquote>
+
+<h3 id="s16331268">3.2 inode结构 <span class="tag-must">必考</span></h3>
+<p>inode（索引节点）包含：文件元数据（大小、权限、时间戳等）+ <span class="kp">i_block[]</span>（12直接+1一级间接+1二级间接+1三级间接）。</p>
+<p><span class="exp">inode不包含文件名！</span>文件名只存在于目录项（ext2_dir_entry）中，这是EXT2的独特性，支持<span class="kp">硬链接</span>（多个文件名指向同一inode）。</p>
+<p>inode缓存（打开文件的inode放入内存）与页缓存（文件数据页）是两套不同的缓存机制。</p>
+
+<h3 id="s87295628">3.3 EXT2目录项 <span class="tag-key">重点</span></h3>
+<p>目录是一种特殊文件，其数据块是<span class="kp">ext2_dir_entry</span>结构的列表，每项包含：inode号、文件名长度、记录总长度、文件类型、文件名。</p>
+<p>文件类型取值：0=未知，1=普通文件，2=目录，3=字符设备，4=块设备，5=FIFO，6=套接字，7=符号链接。</p>
+
+<h3 id="s53462261">3.4 EXT2多级索引计算 <span class="tag-must">必考</span></h3>
+<p>典型考研计算（块大小1KB，块号4B，每块256条索引）：</p>
+<p>最大文件 = 12 + 256 + 256² + 256³ 块 ≈ 16GB</p>
+<p>块大小4KB（1024条索引/块）：最大文件 = 12×4KB + 1024×4KB + 1024²×4KB + 1024³×4KB ≈ 4TB</p>
+
+<h3 id="s33305084">3.5 EXT4 Extent优化 <span class="tag-freq">常考</span></h3>
+<p><span class="kp">Extent</span>：用<span class="kp">B+树</span>替代多级索引，将连续物理块记录为一条区段（起始块号+连续块数），大幅减少间接块数量，优化大文件访问。</p>
+<p>B+树特点：宽泛矮胖（一个节点占一个存储块）；所有数据在叶子节点；按块号有序；减少磁盘I/O次数。</p>
+
+<hr>
+<h2 id="s80236302">4. FAT文件系统</h2>
+
+<h3 id="s39082814">4.1 FAT卷结构 <span class="tag-must">必考</span></h3>
+<p>FAT（File Allocation Table）卷布局（从低到高）：</p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>区域</th><th>说明</th></tr>
+  <tr><td><span class="kp">引导区</span></td><td>引导代码、FAT格式信息、扇区大小、簇大小等</td></tr>
+  <tr><td><span class="kp">FAT1</span></td><td>文件分配表（簇链）</td></tr>
+  <tr><td><span class="kp">FAT2</span></td><td>FAT1的镜像备份</td></tr>
+  <tr><td><span class="kp">根目录</span></td><td>FAT12/16预留256项；FAT32无数量限制</td></tr>
+  <tr><td><span class="kp">数据区</span></td><td>文件/目录数据</td></tr>
+</table>
+<p><span class="kp">簇（Cluster）</span> = n个扇区，是FAT文件系统的基本分配单位。FAT16最大簇数2^16 = 64K，限制单个文件最大4GB。</p>
+
+<h3 id="s72506882">4.2 FAT表 <span class="tag-must">必考</span></h3>
+<p>FAT表每项记录对应簇的"下一个簇号"，构成<span class="kp">簇链（显式链接）</span>。</p>
+<ul>
+  <li>0x0000：该簇空闲</li>
+  <li>0x0002~0xFFEF：下一个簇的簇号（文件链指针）</li>
+  <li>0xFFF0~0xFFFF：特殊状态（文件结束/坏簇/保留）</li>
+</ul>
+<p>FAT32每项4字节，最多限定使用2^28个簇（0.25G个），规定簇大小4~32KB，支持卷大小最大1TB~8TB。</p>
+<blockquote>易错：FAT2是FAT1的镜像备份，目的是防止FAT1损坏导致整卷瘫痪。</blockquote>
+
+<h3 id="s75789305">4.3 FAT目录项 <span class="tag-key">重点</span></h3>
+<p>FAT32目录项固定32字节，包含：文件名、属性字节（r/w/x等）、时间戳、<span class="kp">起始簇号</span>、文件大小。</p>
+<p>文件访问过程（读 /aa/bb/ccc.dat）：</p>
+<ol>
+  <li>查根目录，找目录项名="aa"，得到aa的首簇号</li>
+  <li>顺着FAT簇链读aa目录数据，找目录项名="bb"，得bb首簇号</li>
+  <li>顺着FAT簇链读bb目录数据，找文件名="ccc.dat"，得首簇号</li>
+  <li>顺着FAT簇链读取文件ccc.dat所有数据块</li>
+</ol>
+
+<h3 id="s71159887">4.4 FAT vs EXT2比较 <span class="tag-must">必考</span></h3>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>特性</th><th>FAT32目录项</th><th>EXT2目录项</th></tr>
+  <tr><td>本质</td><td>完整的FCB（包含所有文件元数据）</td><td>仅是文件名到inode的映射（链接）</td></tr>
+  <tr><td>文件元数据</td><td>自包含（大小、时间戳、起始簇号等）</td><td>均在inode中，目录项不包含</td></tr>
+  <tr><td>与文件实体关系</td><td>强耦合：删除目录项 = 删除文件</td><td>弱耦合：支持硬链接（多个名字指向同一inode）</td></tr>
+  <tr><td>分配方式</td><td>链表（显式链接），整个分区内分配</td><td>索引（多级/Extent），首先在块组内分配</td></tr>
+</table>
+
+<hr>
+<h2 id="s81500426">5. 日志文件系统与性能优化</h2>
+
+<h3 id="s88304644">5.1 文件系统日志（Journal） <span class="tag-freq">常考</span></h3>
+<p>传统文件系统在断电/崩溃时会出现不一致（如链接断裂、目录项与inode不同步）。</p>
+<p><span class="kp">Journal（日志）</span>解决方案：写数据前先写到日志区，保证写入的<span class="kp">原子性</span>。</p>
+<p>Undo型日志崩溃恢复：检查是否有未提交的COMMIT --> 定位不一致数据 --> UNDO回滚到崩溃前状态。</p>
+
+<h3 id="s41430619">5.2 日志型文件系统LFS <span class="tag-info">了解</span></h3>
+<p>LFS（Log-Structured Filesystem）：将所有写入顺序追加到日志末尾，消除传统随机写的磁盘寻道开销。</p>
+<p>问题：数据散布全盘，需要内存索引（二叉搜索树）高效定位。日志写满时进行垃圾回收（辨别无效数据 --> 搬运有效数据 --> 释放空间）。</p>
+<p><span class="kp">F2FS（Flash Friendly Filesystem）</span>：针对NAND Flash的日志型文件系统，冷热数据分离，减少写入放大，随机写性能比EXT4提升约2倍。</p>
+
+<h3 id="s70142100">5.3 EXT4 I/O性能优化 <span class="tag-freq">常考</span></h3>
+<ul>
+  <li><span class="kp">写缓冲（延迟写）</span>：数据先进写缓冲区，5~30秒后批量写盘；<code>fsync()</code>可强制立即写盘。</li>
+  <li><span class="kp">延迟块分配</span>：磁盘块分配延迟到数据真正写入时（页面刷新时），降低文件碎片化，避免为临时内容分配磁盘块。</li>
+  <li><span class="kp">Extent B+树</span>：连续物理块用区段表示，减少间接块访问次数（见3.5节）。</li>
+  <li><span class="kp">inode/目录局部性</span>：同一目录中的文件inode集中在同一柱面组；根目录FCB常驻内存；当前目录FCB可驻内存。</li>
+</ul>
+
+
+
+</body>
+</html>

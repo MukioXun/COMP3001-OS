@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第五章：CPU调度与程序优化</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第五章：CPU调度与程序优化</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s82941559">一、CPU调度基本概念</a></li>
+  <li><a href="#s47835664">什么是CPU调度 必考</a></li>
+  <li><a href="#s16091084">CPU-I/O区间周期 重点</a></li>
+  <li><a href="#s69448533">非抢占式 vs 抢占式调度 必考</a></li>
+<li><a href="#s38263724">二、调度准则</a></li>
+  <li><a href="#s88643371">调度评价指标 必考</a></li>
+  <li><a href="#s84842983">调度准则之间的矛盾 重点</a></li>
+<li><a href="#s22104857">三、调度算法</a></li>
+  <li><a href="#s77238065">FCFS — 先到先服务 重点</a></li>
+  <li><a href="#s26157229">SJF — 最短作业优先 必考</a></li>
+  <li><a href="#s73577133">SRJF — 最短剩余作业优先 重点</a></li>
+  <li><a href="#s52193700">CPU区间预测：指数平均法 重点</a></li>
+  <li><a href="#s26701604">优先级调度 重点</a></li>
+  <li><a href="#s54132091">RR — 轮询调度 必考</a></li>
+  <li><a href="#s34498020">多级反馈队列 MLFQ 必考</a></li>
+  <li><a href="#s43776741">彩票调度算法 常考</a></li>
+  <li><a href="#s75912176">调度算法对比总结 必考</a></li>
+<li><a href="#s84484719">四、程序优化基础</a></li>
+  <li><a href="#s85718887">优化层次与目标 重点</a></li>
+  <li><a href="#s77682507">普遍有用的优化方法 必考</a></li>
+  <li><a href="#s69506281">妨碍优化的因素 必考</a></li>
+<li><a href="#s64837651">五、利用指令级并行优化</a></li>
+  <li><a href="#s31561332">现代处理器架构 重点</a></li>
+  <li><a href="#s86595728">循环展开与多累加器 必考</a></li>
+  <li><a href="#s84105278">SIMD 向量化 了解</a></li>
+  <li><a href="#s19532623">优化总结 必考</a></li>
+</ul>
+</div>
+
+<h2 id="s82941559">一、CPU调度基本概念</h2>
+
+<h3 id="s47835664">什么是CPU调度 <span class="tag-must">必考</span></h3>
+<p>
+<span class="kp">CPU调度</span>（进程调度）：操作系统按照一定策略从就绪队列中选择一个进程，将CPU使用权交给该进程。
+</p>
+<ul>
+  <li><span class="kp">调度资源</span>：CPU的使用权或时间片</li>
+  <li><span class="kp">调度对象</span>：进程或线程（原则相同，以进程说明）</li>
+  <li>进程调度 &#x21d4; CPU调度</li>
+</ul>
+
+<h3 id="s16091084">CPU-I/O区间周期 <span class="tag-key">重点</span></h3>
+<p>进程执行过程由<span class="kp">CPU区间</span>与<span class="kp">I/O等待区间</span>交替组成：</p>
+<ul>
+  <li><strong>CPU约束型</strong>：以计算为主，CPU区间较多且长（典型：矩阵运算、Matlab）</li>
+  <li><strong>I/O约束型</strong>：以I/O为主，有大量短CPU区间（典型：word、ppt）</li>
+  <li>实验表明：进程中<span class="kp">短CPU区间出现频率极高</span>，分布呈指数衰减</li>
+</ul>
+<blockquote>易错：CPU区间长度频率分布是"指数衰减"——短区间极多，长区间极少，不是均匀分布。</blockquote>
+
+<h3 id="s69448533">非抢占式 vs 抢占式调度 <span class="tag-must">必考</span></h3>
+<table>
+  <tr><th>类型</th><th>触发条件</th><th>使用场景</th></tr>
+  <tr><td><span class="kp">非抢占式</span></td><td>进程主动让出（完成或等待事件）</td><td>早期多道批处理系统</td></tr>
+  <tr><td><span class="kp">抢占式</span></td><td>时间片到期 / 出现更高优先级进程</td><td>大多数现代操作系统</td></tr>
+</table>
+
+<h2 id="s38263724">二、调度准则</h2>
+
+<h3 id="s88643371">调度评价指标 <span class="tag-must">必考</span></h3>
+<ul>
+  <li><span class="kp">吞吐量</span>：单位时间完成的任务数量（越大越好）</li>
+  <li><span class="kp">周转时间</span> = 完成时刻 - 到达时刻（越小越好）</li>
+  <li><span class="kp">等待时间</span>：任务在就绪队列中等待的时间总和</li>
+  <li><span class="kp">响应时间</span> = 首次运行时刻 - 到达时刻（交互式系统关键指标）</li>
+</ul>
+<blockquote>易错：响应时间≠周转时间。响应时间是<strong>首次运行</strong>到到达的间隔；周转时间是<strong>完成</strong>到到达的间隔。</blockquote>
+
+<h3 id="s84842983">调度准则之间的矛盾 <span class="tag-key">重点</span></h3>
+<ul>
+  <li>响应时间短 --> 前台任务优先级高 --> 后台任务饥饿</li>
+  <li>吞吐量大 --> 时间片大（切换少） --> 响应时间长</li>
+  <li><span class="exp">协调多个目标是操作系统复杂性的重要来源</span></li>
+</ul>
+
+<h2 id="s22104857">三、调度算法</h2>
+
+<h3 id="s77238065">FCFS — 先到先服务 <span class="tag-key">重点</span></h3>
+<p>调度顺序即到达就绪队列的顺序。</p>
+<p><strong>示例</strong>（5个进程同时到达，CPU区间：P1=10, P2=29, P3=3, P4=7, P5=12）：</p>
+<ul>
+  <li>执行顺序：P1 P2 P3 P4 P5，完成时刻：10, 39, 42, 49, 61</li>
+  <li>平均等待时间：(0+10+39+42+49)/5 = <strong>28</strong></li>
+  <li>平均周转时间：(10+39+42+49+61)/5 = <strong>40.2</strong></li>
+</ul>
+<p>特点：<span class="kp">公平简单、非抢占</span>；存在<span class="kp">护航效应</span>（长作业阻塞后续短作业），不适合交互式系统。</p>
+<blockquote>易错：时间片用完后进程变为"就绪态"而非"阻塞态"（阻塞是等待I/O事件）。</blockquote>
+
+<h3 id="s26157229">SJF — 最短作业优先 <span class="tag-must">必考</span></h3>
+<p>每次选择<span class="kp">CPU区间最短</span>的进程调度（非抢占版本）。</p>
+<p><strong>同上示例用SJF</strong>（P3=3, P4=7, P1=10, P5=12, P2=29）：</p>
+<ul>
+  <li>平均等待时间：(0+3+10+20+32)/5 = <strong>13</strong></li>
+  <li>平均周转时间：(3+10+20+32+61)/5 = <strong>25.2</strong></li>
+</ul>
+<p><span class="kp">SJF是同时到达时平均等待时间最小的调度算法（可证明）</span>。</p>
+<p><strong>问题</strong>：CPU区间大小必须已知或可预测。</p>
+
+<h3 id="s73577133">SRJF — 最短剩余作业优先 <span class="tag-key">重点</span></h3>
+<p>SJF的<span class="kp">可抢占版本</span>：新进程到达时，若其剩余时间 &lt; 当前进程剩余时间，则抢占。</p>
+<p><strong>示例</strong>（P1到达0需10ms，P3到达5需3ms --> 到时刻5 P1剩余5ms &gt; P3的3ms，P3抢占）：</p>
+<ul>
+  <li>SRJF平均等待时间 = 8.6 &lt; SJF的10.4</li>
+</ul>
+<blockquote>易错：SRJF比SJF等待时间更小，但CPU区间仍必须已知。</blockquote>
+
+<h3 id="s52193700">CPU区间预测：指数平均法 <span class="tag-key">重点</span></h3>
+<p>
+<span class="kp">τ<sub>n+1</sub> = α·t<sub>n</sub> + (1-α)·τ<sub>n</sub></span><br>
+其中 t<sub>n</sub> 是当前CPU区间，τ<sub>n+1</sub> 是下次预测值，α 控制历史与近期的权重。
+</p>
+<ul>
+  <li>α = 0：忽略近期，关注历史</li>
+  <li>α = 1：只关注当前</li>
+  <li><strong>通常取 α = 0.5</strong></li>
+</ul>
+
+<h3 id="s26701604">优先级调度 <span class="tag-key">重点</span></h3>
+<p>每个任务关联一个优先权，调度优先权最高的任务。SJF是优先级调度的特例（优先级 = 1/CPU区间）。</p>
+<p><span class="kp">饥饿问题</span>：优先级太低的任务一直得不到运行。</p>
+<p>解决：<span class="kp">老化（Aging）</span>技术——任务优先级随等待时间增长而提升。</p>
+<blockquote>易错：FCFS是RR的特例（时间片无穷大时等价FCFS），SJF是优先级调度的特例。这两对关系常考。</blockquote>
+
+<h3 id="s54132091">RR — 轮询调度 <span class="tag-must">必考</span></h3>
+<p>按<span class="kp">时间片</span>轮转调度，适合交互式系统。</p>
+<p><strong>示例</strong>（时间片=10，P1=10, P2=29, P3=3, P4=7, P5=12）：</p>
+<ul>
+  <li>调度序列：P1 P2 P3 P4 P5 P2 P5 P2，完成：10, 61, 23, 30, 52</li>
+  <li>平均周转时间：35.2（FCFS=40.2，SJF=25.2）</li>
+  <li>平均响应时间：16.6（FCFS=28，SJF=13）</li>
+  <li>上下文切换次数：RR=7次 vs FCFS/SJF=4次</li>
+</ul>
+<p><strong>时间片设置原则</strong>（折中）：</p>
+<ul>
+  <li>太大 --> 退化为FCFS，响应时间长</li>
+  <li>太小 --> 切换开销比例过大（如时间片20ms，切换5ms，则20%开销）</li>
+  <li><span class="kp">推荐：时间片10-100ms，切换时间约0.1-1ms（1%）</span></li>
+</ul>
+<blockquote>易错：时间片≥最长作业时等同于FCFS。减小时间片不一定减小平均周转时间（示例见教材表格：时间片=3时均值10.75，时间片=6时10.5）。</blockquote>
+
+<h3 id="s34498020">多级反馈队列 MLFQ <span class="tag-must">必考</span></h3>
+<p>最通用也最复杂的CPU调度算法。</p>
+<ul>
+  <li>将任务按优先级分为多个队列（如队列0/1/2对应实时/系统/交互/批处理进程）</li>
+  <li>高优先级队列不空时不调度低优先级队列</li>
+  <li><span class="kp">任务可在队列间移动</span>：
+    <ul>
+      <li>使用太多CPU时间 --> 降低到低优先级队列</li>
+      <li>在低优先级等太久 --> 提升到高优先级队列（Aging）</li>
+    </ul>
+  </li>
+</ul>
+<p>需要决定的参数：队列数目、每队调度算法、升降队列策略、初始分配策略。</p>
+
+<h3 id="s43776741">彩票调度算法 <span class="tag-freq">常考</span></h3>
+<p>
+<span class="kp">彩票数</span>表示任务应获得的资源份额。调度器随机选彩票，加载中奖进程运行。
+</p>
+<ul>
+  <li>进程A有75张彩票 --> 占75% CPU时间；进程B有25张 --> 占25%</li>
+  <li>随着时间增加，实际分配比例趋近期望值</li>
+  <li>优点：简单、支持比例资源分配</li>
+</ul>
+
+<h3 id="s75912176">调度算法对比总结 <span class="tag-must">必考</span></h3>
+<table>
+  <tr><th>算法</th><th>类型</th><th>优点</th><th>缺点</th></tr>
+  <tr><td>FCFS</td><td>非抢占</td><td>公平、简单</td><td>护航效应，不适合交互式</td></tr>
+  <tr><td>SJF</td><td>非抢占</td><td>最小平均等待时间</td><td>需知CPU区间，可能饥饿</td></tr>
+  <tr><td>SRJF</td><td>抢占</td><td>比SJF更优</td><td>需知CPU区间，开销大</td></tr>
+  <tr><td>优先级</td><td>抢占/非</td><td>灵活</td><td>低优先级饥饿（需Aging）</td></tr>
+  <tr><td>RR</td><td>抢占</td><td>响应时间短，公平</td><td>上下文切换多，周转时间长</td></tr>
+  <tr><td>MLFQ</td><td>抢占</td><td>最通用，自适应</td><td>最复杂，参数多</td></tr>
+  <tr><td>彩票</td><td>抢占</td><td>比例分配，简单</td><td>随机性，短期不精确</td></tr>
+</table>
+
+<h2 id="s84484719">四、程序优化基础</h2>
+
+<h3 id="s85718887">优化层次与目标 <span class="tag-key">重点</span></h3>
+<p>需要在多个层次优化：算法 --> 数据结构 --> 过程 --> 循环（重点内循环）。</p>
+<p><span class="kp">CPE（Cycles Per Element）</span>：处理每个元素的平均时钟周期数，线性模型 T = CPE × n + Overhead。</p>
+<p>降低CPE是优化数据密集型循环的关键目标。</p>
+
+<h3 id="s77682507">普遍有用的优化方法 <span class="tag-must">必考</span></h3>
+<p><strong>1. 代码移动（Code Motion）</strong></p>
+<ul>
+  <li>将循环中每次结果相同的计算移到循环外</li>
+  <li>示例：将 <code>strlen(s)</code> 从 for 条件中移出，使 lower1（O(n²)）变成 lower2（O(n)）</li>
+</ul>
+<p><strong>2. 复杂运算简化（Strength Reduction）</strong></p>
+<ul>
+  <li>用更简单操作替换昂贵操作：移位/加法代替乘除法</li>
+  <li>示例：循环中 <code>n*i</code> 改为累加 <code>ni += n</code>，避免每次乘法</li>
+</ul>
+<p><strong>3. 公用子表达式共享</strong></p>
+<ul>
+  <li>将多次计算的相同表达式提取为临时变量</li>
+</ul>
+<p><strong>4. 局部变量累积结果（消除不必要内存引用）</strong></p>
+<ul>
+  <li>用临时/局部变量在循环中累积，最后一次性写回 *dest</li>
+  <li>combine1 --> combine4：CPE从10.12降至1.27（整数加）</li>
+</ul>
+
+<h3 id="s69506281">妨碍优化的因素 <span class="tag-must">必考</span></h3>
+<p><strong>障碍1：函数调用</strong></p>
+<ul>
+  <li>编译器将函数视为黑盒，在函数附近进行弱优化</li>
+  <li>原因：函数可能有副作用，或依赖全局状态，对相同参数可能返回不同值</li>
+  <li>补救：使用 <code>inline</code> 内联函数，或程序员手动代码移动</li>
+</ul>
+<p><strong>障碍2：内存别名使用</strong></p>
+<ul>
+  <li>两个不同的内存引用指向相同位置（C语言允许地址运算，很容易发生）</li>
+  <li>示例：若 a 和 b 内存区域重叠，修改 b[i] 可能改变 a 的后续元素，编译器不敢优化</li>
+  <li>补救：<span class="kp">引入局部变量在循环中累积，避免重复读写同一内存位置</span></li>
+</ul>
+<blockquote>易错：这两个障碍是编译器无法自动绕过的，必须程序员手动处理。</blockquote>
+
+<h2 id="s64837651">五、利用指令级并行优化</h2>
+
+<h3 id="s31561332">现代处理器架构 <span class="tag-key">重点</span></h3>
+<ul>
+  <li><span class="kp">超标量处理器</span>：一个周期执行多条指令，从连续指令流中动态调度</li>
+  <li><span class="kp">乱序执行</span>：只要不违反数据依赖和控制依赖，处理器可以乱序执行指令</li>
+  <li><span class="kp">流水线功能单元</span>：将运算分解为多阶段，前阶段值传出后即可开始下一次运算</li>
+</ul>
+<p>Haswell CPU 关键参数（整数/浮点）：</p>
+<table>
+  <tr><th>运算</th><th>整数延迟</th><th>整数容量</th><th>浮点延迟</th><th>浮点容量</th></tr>
+  <tr><td>加法</td><td>1</td><td>4</td><td>3</td><td>1</td></tr>
+  <tr><td>乘法</td><td>3</td><td>1</td><td>5</td><td>2</td></tr>
+  <tr><td>除法</td><td>3-30</td><td>1</td><td>3-15</td><td>1</td></tr>
+</table>
+<ul>
+  <li><span class="kp">延迟界限</span>：顺序依赖时CPE的下限 = 单次操作的延迟周期数</li>
+  <li><span class="kp">吞吐量界限</span>：CPE的终极下限 = 1/吞吐量，吞吐量 = 容量/发射时间</li>
+</ul>
+
+<h3 id="s86595728">循环展开与多累加器 <span class="tag-must">必考</span></h3>
+<p><strong>2x1循环展开</strong>（x = (x OP d[i]) OP d[i+1]）：</p>
+<ul>
+  <li>减少循环次数，对整数加法有帮助（达到延迟界限）</li>
+  <li>其他无改进——括号顺序导致仍然是顺序依赖</li>
+</ul>
+<p><strong>2x1a 重组展开</strong>（x = x OP (d[i] OP d[i+1])）：</p>
+<ul>
+  <li>改变括号位置，<span class="kp">打破顺序依赖</span>：d[i] OP d[i+1] 无需等待上次结果</li>
+  <li>CPE ≈ 延迟界限/2，接近2倍速度提升</li>
+  <li>注意：浮点运算缺乏结合性，结果可能不同</li>
+</ul>
+<p><strong>2x2 分离累加器</strong>（x0 和 x1 独立累积）：</p>
+<ul>
+  <li>两条独立流水线并行，同样实现CPE ≈ 延迟界限/2</li>
+  <li>整数加法进一步利用两个加载单元，CPE=0.81</li>
+</ul>
+<p><strong>一般 KxU 展开原则</strong>：要达到吞吐量界限，需 K ≥ 容量 × 延迟。</p>
+<blockquote>易错：循环展开本身（2x1）不改变顺序依赖，必须结合重组（2x1a）或分离累加器（2x2）才能突破延迟界限。</blockquote>
+
+<h3 id="s84105278">SIMD 向量化 <span class="tag-info">了解</span></h3>
+<ul>
+  <li><span class="kp">SIMD</span>（Single Instruction Multiple Data）：一条指令同时对多个数据执行相同操作</li>
+  <li>AVX2的YMM寄存器：256位，可同时处理 8个32位浮点 或 4个64位浮点</li>
+  <li>向量化后可比标量最优再提升约4-16倍（Double FP乘法：0.52 --> 0.16 CPE）</li>
+</ul>
+
+<h3 id="s19532623">优化总结 <span class="tag-must">必考</span></h3>
+<table>
+  <tr><th>优化方法</th><th>Int+</th><th>Int*</th><th>FP+</th><th>FP*</th></tr>
+  <tr><td>未优化 Combine1</td><td>22.68</td><td>20.02</td><td>19.98</td><td>20.18</td></tr>
+  <tr><td>-O1编译优化</td><td>10.12</td><td>10.12</td><td>10.17</td><td>11.14</td></tr>
+  <tr><td>Combine4（手动优化）</td><td>1.27</td><td>3.01</td><td>3.01</td><td>5.01</td></tr>
+  <tr><td>2x2分离累加器</td><td>0.81</td><td>1.51</td><td>1.51</td><td>2.51</td></tr>
+  <tr><td>标量最优Best</td><td>0.54</td><td>1.01</td><td>1.01</td><td>0.52</td></tr>
+  <tr><td>向量化Best</td><td>0.06</td><td>0.24</td><td>0.25</td><td>0.16</td></tr>
+  <tr><td><em>延迟界限</em></td><td>1.00</td><td>3.00</td><td>3.00</td><td>5.00</td></tr>
+  <tr><td><em>吞吐量界限</em></td><td>0.50</td><td>1.00</td><td>1.00</td><td>0.50</td></tr>
+</table>
+<p><span class="exp">最终性能比未优化代码提升约42倍，仅受功能单元吞吐量限制。</span></p>
+
+
+
+</body>
+</html>

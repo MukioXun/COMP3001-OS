@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第一章：导论与操作系统结构</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第一章：导论与操作系统结构</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s38084480">本章整体概览</a></li>
+<li><a href="#s46932658">前置知识补充</a></li>
+<li><a href="#s85267075">本章知识地图与页面逻辑</a></li>
+<li><a href="#s60673511">逐模块深度讲解</a></li>
+  <li><a href="#s36814653">模块一：操作系统是什么 必考</a></li>
+  <li><a href="#s74267741">模块二：操作系统的四大特征 必考</a></li>
+  <li><a href="#s77488274">模块三：操作系统发展历史 重点</a></li>
+  <li><a href="#s28242818">模块四：操作系统内核结构 必考</a></li>
+  <li><a href="#s69855230">模块五：系统调用 必考</a></li>
+  <li><a href="#s67655883">模块六：系统启动流程 重点</a></li>
+<li><a href="#s61693261">公式、图表与考点复盘索引</a></li>
+<li><a href="#s12689908">常见误区与易混淆点</a></li>
+<li><a href="#s27459837">考试可能考点</a></li>
+<li><a href="#s91885881">本章总结</a></li>
+</ul>
+</div>
+
+<h2 id="s38084480">本章整体概览</h2>
+<p>本章核心问题：<span class="kp">操作系统是什么、为什么需要它、它如何被实现</span>。<span class="exp">后续章节的进程、内存、文件系统都是对"OS是硬件与用户程序之间的中介"这一核心思想的具体展开。</span></p>
+
+<h2 id="s46932658">前置知识补充</h2>
+<p><span class="kp">计算机系统的层次结构</span><span class="exp">：硬件(ISA) → OS → 系统软件 → 应用程序。每层是下层的抽象，上层看不到下层实现细节。</span></p>
+<p><span class="kp">程序从源码到执行</span><span class="exp">：hello.c → 预处理(.i) → 编译(.s) → 汇编(.o) → 链接(可执行) → 加载进虚拟内存 → CPU执行。OS参与了加载、执行、I/O每一步。</span></p>
+
+<h2 id="s85267075">本章知识地图与页面逻辑</h2>
+<p>五个模块：课程介绍 → OS基本功能与特征 → OS发展历史与内核结构 → OS接口与系统调用 → OS在各领域的作用。先理解OS做什么，再理解OS怎么做，最后理解为什么要这样做。</p>
+
+<h2 id="s60673511">逐模块深度讲解</h2>
+
+<h3 id="s36814653">模块一：操作系统是什么 <span class="tag-must">必考</span></h3>
+<p><strong>定义</strong>：<span class="kp">OS是一个大型程序系统，负责软硬件资源分配；控制和协调并发活动；提供用户接口。</span></p>
+<p><strong>为什么需要OS</strong>：<span class="exp">硬件不能被应用直接安全高效地使用。OS本质是"硬件的管理者"和"应用程序的服务者"。</span></p>
+<p><strong>OS提供的三大抽象</strong>：</p>
+<ul>
+<li><span class="kp">进程</span><span class="exp">：对处理器、主存和I/O设备的抽象，让每个程序以为自己独占CPU。</span></li>
+<li><span class="kp">虚拟内存</span><span class="exp">：对主存和磁盘I/O设备的抽象，让每个程序以为自己有独立的大内存空间。</span></li>
+<li><span class="kp">文件</span><span class="exp">：对I/O设备的抽象，统一了磁盘、键盘、网络的访问接口。</span></li>
+</ul>
+<blockquote>易错：进程是对"处理器+主存+I/O设备"三者的抽象，不只是CPU；虚拟内存是对"主存+磁盘"的抽象，不只是内存。这是经典选择题考点。</blockquote>
+
+<h3 id="s74267741">模块二：操作系统的四大特征 <span class="tag-must">必考</span></h3>
+<p><strong>1. 并发（Concurrence）</strong>：<span class="kp">两个或多个事件在同一时间间隔内发生（宏观并行，微观交替）。</span><span class="exp">区别并行（Parallelism）：并行是同一时刻真正同时发生，需要多核。单核CPU上只有并发，没有并行。并发是单处理机OS最重要的特征。</span></p>
+<p><strong>2. 共享（Sharing）</strong>：<span class="kp">系统资源可供多个并发进程共同使用。</span><span class="exp">分两类：互斥共享（临界资源，如打印机，同一时刻只允许一个进程）；同时访问（分时复用如单核CPU，或真正并发如只读文件）。共享与并发互为依存。</span></p>
+<p><strong>3. 异步性（Asynchronism）</strong>：<span class="kp">任务以不可预知的速度推进，结果具有不确定性。</span><span class="exp">根因是多进程竞争资源。进程可能在任意指令后被时钟中断剥夺CPU；无同步机制时，共享变量的结果取决于指令交错顺序，每次运行可能不同。这是后续"并发与同步"章节要解决的核心问题。</span></p>
+<p><strong>4. 虚拟（Virtual）</strong>：<span class="kp">把一个物理实体变成若干个逻辑上的对应物。</span><span class="exp">虚拟CPU（每进程以为独占CPU）、虚拟内存（每进程以为有独立地址空间）都是虚拟化体现，是OS最核心的关键技术之一。</span></p>
+<blockquote>易错：并发是"时间段内"，并行是"同一时刻"。单核CPU上程序A和B"并发"是微观轮流占CPU，不是同时执行。</blockquote>
+
+<h3 id="s77488274">模块三：操作系统发展历史 <span class="tag-key">重点</span></h3>
+<p><strong>主线</strong>：<span class="exp">每代OS的出现都为了解决上一代效率瓶颈。</span></p>
+<ul>
+<li><span class="kp">手工操作</span><span class="exp">：CPU速度提升后，人工操作时间远大于机器运行时间，CPU大量空等。</span></li>
+<li><span class="kp">批处理系统</span><span class="exp">：联机批处理直接连主机；脱机批处理通过磁带中转，避免主机等待低速设备。</span></li>
+<li><span class="kp">多道程序设计</span><span class="exp">：内存同时放多个程序，一个等I/O时CPU切给另一个，大幅提升CPU利用率。这是现代OS的基础。</span></li>
+<li><span class="kp">分时系统</span><span class="exp">：多用户共享主机，每用户感觉独占，引入时间片轮转调度。</span></li>
+</ul>
+<p><strong>Unix历史要点</strong>：<span class="exp">1969年Ken Thompson用汇编写出Unix原型（为运行星际旅行游戏）；1970年设计B语言；1972年Dennis Ritchie设计C语言；1973年用C重写Unix。</span></p>
+
+<h3 id="s28242818">模块四：操作系统内核结构 <span class="tag-must">必考</span></h3>
+<p><strong>为什么讨论内核结构</strong>：<span class="exp">OS内核代码庞大，哪些放内核态、哪些放用户态直接影响性能、安全性和可维护性。</span></p>
+<p><strong>宏内核（Monolithic Kernel）</strong>：<span class="kp">所有OS功能（进程/内存/文件系统/驱动）都在内核空间同一地址空间，通过函数调用相互访问。</span><span class="exp">优：性能高，调用开销小。缺：一个服务崩溃可能导致整个系统崩溃，不易扩展。代表：Linux、BSD。</span></p>
+<p><strong>微内核（Microkernel）</strong>：<span class="kp">仅将基本IPC、内存管理、调度放内核空间；文件系统、驱动、网络作为独立用户态进程，通过IPC通信。</span><span class="exp">优：单服务崩溃不影响全局，可扩展，更安全。缺：IPC开销大，性能低于宏内核。代表：QNX、Minix、HURD。</span></p>
+<table border="1" style="border-collapse:collapse;width:100%">
+<tr><th></th><th>宏内核</th><th>微内核</th></tr>
+<tr><td>服务运行位置</td><td>内核态（同一地址空间）</td><td>用户态（不同地址空间）</td></tr>
+<tr><td>通信方式</td><td>函数调用</td><td>IPC</td></tr>
+<tr><td>执行速度</td><td>快</td><td>慢</td></tr>
+<tr><td>安全性</td><td>低（一崩全崩）</td><td>高（服务隔离）</td></tr>
+<tr><td>可扩展性</td><td>差</td><td>好</td></tr>
+<tr><td>代表</td><td>Linux, BSD, Windows</td><td>QNX, Minix, HURD</td></tr>
+</table>
+<blockquote>易错：微内核"内核本身尺寸小"，但总代码量（含用户态服务）反而更大。不要混淆"内核尺寸"和"代码量"。</blockquote>
+
+<h3 id="s69855230">模块五：系统调用 <span class="tag-must">必考</span></h3>
+<p><strong>为什么需要系统调用</strong>：<span class="exp">用户程序在用户态运行，无法直接访问硬件资源。OS提供一组受控接口让用户程序请求内核服务，同时保证安全隔离。</span></p>
+<p><strong>执行流程</strong>：<span class="kp">用户程序调用库函数(如printf) → 库函数设置系统调用号(eax=1) → syscall/int 0x80陷入内核态 → 保存所有寄存器 → 中断处理程序按调用号分发到内核函数(如sys_write) → 执行完毕 → 恢复寄存器 → 返回用户态。</span></p>
+<p><strong>五大系统调用类型</strong>：
+<span class="kp">进程控制</span><span class="exp">(fork/exit/wait)；</span>
+<span class="kp">文件管理</span><span class="exp">(open/read/write/close)；</span>
+<span class="kp">设备管理</span><span class="exp">(ioctl)；</span>
+<span class="kp">信息维护</span><span class="exp">(getpid/alarm)；</span>
+<span class="kp">通信</span><span class="exp">(pipe/shmget/mmap)。</span></p>
+<blockquote>易错：系统调用不是函数调用。函数调用不切换特权级；系统调用必须通过syscall/int指令从用户态陷入内核态，有显著开销。</blockquote>
+
+<h3 id="s67655883">模块六：系统启动流程 <span class="tag-key">重点</span></h3>
+<p><span class="kp">上电 → ROM固件执行 → bootstrap loader定位内核 → 内核加载到内存 → 内核初始化启动。</span><span class="exp">GRUB是常见引导程序，支持从多磁盘、多版本选择内核。引导可分两阶段：ROM代码加载boot block，再由boot block加载完整bootstrap loader。</span></p>
+
+<h2 id="s61693261">公式、图表与考点复盘索引</h2>
+<p>本章无数学公式，核心考点为概念辨析：</p>
+<ul>
+<li>三大抽象：进程/虚拟内存/文件各对应哪些硬件（PPT第32页）</li>
+<li>并发vs并行定义区别（PPT第26页）</li>
+<li>宏内核vs微内核比较（PPT第46页）</li>
+<li>系统调用五大类 + Windows/Unix对照（PPT第53-54页）</li>
+<li>存储器层次结构（PPT第71页）：最顶层为寄存器</li>
+</ul>
+
+<h2 id="s12689908">常见误区与易混淆点</h2>
+<blockquote>易错：进程是对"处理器+主存+I/O"三者的抽象，不只是CPU。</blockquote>
+<blockquote>易错：并发≠并行。单处理机OS有并发，无并行（微观上同一时刻只执行一条指令）。</blockquote>
+<blockquote>易错：微内核"内核尺寸小"，但IPC接口代码量大，总代码量反而更大。</blockquote>
+<blockquote>易错：系统调用涉及特权级切换，开销远大于普通函数调用。</blockquote>
+<blockquote>易错：存储器层次结构最顶层（速度最快）是寄存器，不是高速缓存。</blockquote>
+
+<h2 id="s27459837">考试可能考点</h2>
+<p>本章以选择题、填空题为主。重点：三大抽象对应关系；四大特征定义与区分；宏内核vs微内核比较；系统调用执行流程；并发与并行区别；存储器层次结构最顶层。</p>
+
+<h2 id="s91885881">本章总结</h2>
+<p>OS是硬件与应用之间的"中介层"，通过并发管理、资源共享、虚拟化和统一接口（系统调用）让多个程序安全高效地共用一套硬件。内核结构（宏/微/混合）决定了中介层的实现方式和性能取舍。</p>
+
+
+
+</body>
+</html>

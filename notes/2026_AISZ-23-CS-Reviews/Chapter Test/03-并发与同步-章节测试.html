@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第三章：并发与同步</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第三章：并发与同步</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "以下哪个信号不能被进程捕获或忽略？", "options": ["SIGINT（2）", "SIGKILL（9）", "SIGALRM（14）", "SIGCHLD（17）"], "answer": 1, "knowledge_point": "信号的基本概念", "diagnosis_hint": "混淆可捕获信号与不可捕获信号", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：SIGKILL（9）和 SIGSTOP 是唯二不可被捕获、阻塞或忽略的信号，用于强制终止或停止进程。SIGINT 可以被捕获（如实现优雅退出），SIGALRM 和 SIGCHLD 也可以被捕获。", "pitfall": "注意只有 SIGKILL 和 SIGSTOP 这两个信号不可被处理。"}, {"type": "choice", "points": 2, "question": "在 Linux 中，按下 Ctrl-C 向前台进程发送的信号是？", "options": ["SIGKILL", "SIGTSTP", "SIGINT", "SIGQUIT"], "answer": 2, "knowledge_point": "发送信号", "diagnosis_hint": "混淆各快捷键对应的信号", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：Ctrl-C 发送 SIGINT（2），Ctrl-Z 发送 SIGTSTP（挂起），Ctrl-\\ 发送 SIGQUIT（带 core dump 退出）。SIGKILL 不能由键盘直接发送，需通过 kill 命令。", "pitfall": "Ctrl-Z 是 SIGTSTP（暂停），而非 SIGKILL。"}, {"type": "choice", "points": 2, "question": "以下关于标准 Unix 信号的描述，正确的是？", "options": ["同一类型信号可以排队多个待处理", "pending 位向量每种信号只有 1 位，信号不排队", "blocked 信号会被立即丢弃", "信号可以从用户态直接发送给内核"], "answer": 1, "knowledge_point": "接收信号与处理", "diagnosis_hint": "误以为信号像消息队列一样排队", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：标准信号用位向量记录，每种信号只有 1 位，无法累积多个。如果同类信号连续到达，只会记录'有一个待处理'，其余被丢弃。blocked 的信号不被处理但也不丢弃，等解除阻塞后可被接收。", "pitfall": "信号不同于消息队列，不会累积——这是标准信号与实时信号的重要区别。"}, {"type": "choice", "points": 2, "question": "信号处理函数（handler）中，以下哪个函数调用是安全的（async-signal-safe）？", "options": ["printf()", "malloc()", "write()", "exit()"], "answer": 2, "knowledge_point": "安全的信号处理", "diagnosis_hint": "不了解 async-signal-safe 函数列表", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：write() 是 async-signal-safe 的，可以在 handler 中安全使用。printf() 使用静态缓冲区（非原子），malloc() 操作堆（使用锁），exit() 会调用用户定义的清理函数，这三者在 handler 中调用可能导致死锁或数据损坏。", "pitfall": "记住：在 handler 中用 write() 输出，不要用 printf()。"}, {"type": "choice", "points": 2, "question": "线程 A 和线程 B 共享全局变量 cnt，两者各执行 cnt++ 一千次，以下哪个结果是可能的？", "options": ["一定是 2000", "一定小于 2000", "可能是 1000 到 2000 之间的任意值", "可能是 0"], "answer": 2, "knowledge_point": "不正确的共享变量访问", "diagnosis_hint": "不了解竞争条件导致的结果范围", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：cnt++ 被编译为 Load-Update-Store 三步，两线程交错执行时可能丢失更新。最坏情况下，一个线程的所有更新被另一个线程覆盖，结果为 1000；最好情况下没有竞争，结果为 2000。因此结果在 1000~2000 之间（理论上更差情况需要特定时序）。", "pitfall": "结果不会低于 1000，因为每个线程至少会保留自己最后一次写入。"}, {"type": "choice", "points": 2, "question": "用信号量实现互斥时，mutex 的初值应设为？", "options": ["0", "1", "-1", "与临界区大小相关"], "answer": 1, "knowledge_point": "互斥锁（Mutex）", "diagnosis_hint": "混淆互斥信号量和同步信号量的初值", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：互斥信号量表示&ldquo;临界区当前是否可用&rdquo;，初值为 1 表示初始时临界区可进入。第一个线程 P(mutex) 将其变为 0，其他线程 P 操作将阻塞。当持锁线程 V(mutex) 后，等待线程被唤醒。", "pitfall": "同步信号量初值通常为 0（等待某事件），互斥信号量初值为 1（允许进入）。"}, {"type": "choice", "points": 2, "question": "生产者-消费者问题中，生产者的 P 操作顺序应该是？", "options": ["P(mutex) --> P(empty) --> 生产 --> V(mutex) --> V(full)", "P(empty) --> P(mutex) --> 生产 --> V(mutex) --> V(full)", "P(full) --> P(mutex) --> 生产 --> V(mutex) --> V(empty)", "P(mutex) --> P(full) --> 生产 --> V(empty) --> V(mutex)"], "answer": 1, "knowledge_point": "生产者-消费者问题", "diagnosis_hint": "P 操作顺序错误导致死锁", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：必须先 P(empty) 检查空槽，再 P(mutex) 加锁。如果先 P(mutex) 再 P(empty)，当缓冲区满时，生产者持锁等待 empty，消费者等 mutex 无法取数据，发生死锁。", "pitfall": "资源信号量（empty/full）的 P 操作必须在互斥信号量（mutex）的 P 操作之前。"}, {"type": "choice", "points": 2, "question": "读者-写者问题第一类（读者优先）方案的特点是？", "options": ["写者优先于读者", "读者和写者轮流执行", "只要有读者在读，新读者可直接进入，写者可能饥饿", "写者等待时禁止新读者进入"], "answer": 2, "knowledge_point": "读者-写者问题", "diagnosis_hint": "混淆第一类和第二类读者写者问题", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：第一类（读者优先）：第一个读者 P(w) 阻止写者，后续读者通过 readcnt 计数直接进入，最后一个读者 V(w) 释放写者。这导致只要持续有读者，写者永远无法进入（写者饥饿）。D 是第二类（写者优先）的特点。", "pitfall": "第一类=读者优先（写者可能饥饿），第二类=写者优先（读者可能饥饿）。"}, {"type": "choice", "points": 2, "question": "哲学家就餐问题中，以下哪种方案能有效避免死锁？", "options": ["每个哲学家先拿左边筷子，再拿右边筷子", "限制同时尝试就餐的哲学家数不超过 4 人（共 5 人）", "哲学家吃饭不需要等待", "先拿筷子的哲学家有优先权"], "answer": 1, "knowledge_point": "哲学家就餐问题", "diagnosis_hint": "不了解打破循环等待的方法", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：A 是导致死锁的错误方案（所有人同时拿左筷子形成环形等待）。B 用计数信号量限制最多 4 人同时竞争，至少一人能拿到两根筷子，打破了&ldquo;所有人都在等待&rdquo;的死锁条件。", "pitfall": "死锁的根本原因是循环等待，需要打破环形依赖。"}, {"type": "choice", "points": 2, "question": "以下关于可重入函数（Reentrant Function）的描述，正确的是？", "options": ["可重入函数一定是线程安全的", "线程安全函数一定是可重入的", "可重入函数可以使用全局变量", "所有标准库函数都是可重入的"], "answer": 0, "knowledge_point": "线程安全", "diagnosis_hint": "混淆线程安全和可重入的关系", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：可重入函数不引用任何共享数据（无全局变量、无静态变量），是线程安全的子集（可重入 ⊂ 线程安全）。反之不成立：线程安全函数可以通过加锁访问共享数据，但不是可重入的。可重入函数不能使用全局变量或静态变量。", "pitfall": "可重入 ⊂ 线程安全，但线程安全 ⊄ 可重入。"}, {"type": "tf", "points": 1, "question": "SIGKILL 信号可以被进程通过 signal() 函数注册处理函数来捕获。", "options": [], "answer": false, "knowledge_point": "信号的基本概念", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：SIGKILL 和 SIGSTOP 是不可被捕获、阻塞或忽略的信号，内核直接处理，忽略任何用户注册的 handler。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "信号处理函数（handler）执行期间，内核会自动阻塞同类型的信号（隐式阻塞）。", "options": [], "answer": true, "knowledge_point": "阻塞信号", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：默认情况下，当执行某类信号的 handler 时，内核会自动将该类信号加入阻塞集合，防止 handler 被同类信号递归中断。这称为隐式阻塞。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "如果同类型信号连续发送 5 次，进程会接收并处理 5 次该信号。", "options": [], "answer": false, "knowledge_point": "接收信号与处理", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：标准 Unix 信号用位向量记录（每种信号 1 位），不排队。5 次同类信号到来，位向量仍只记录&ldquo;有一个待处理&rdquo;，进程最多只处理 1 次（或少于 5 次）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "线程的局部自动变量（函数内 non-static 变量）存放在线程私有栈上，不同线程各有独立副本。", "options": [], "answer": true, "knowledge_point": "线程内存模型", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：每个线程拥有自己的栈帧，局部自动变量存在栈上，不同线程的同名变量互不干扰。但注意：如果将该变量的地址传给其他线程，则其他线程可以通过指针访问，形成共享（危险操作）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "信号量的 P 操作可以被分解为&ldquo;检查值&rdquo;和&ldquo;减 1&rdquo;两个独立步骤执行。", "options": [], "answer": false, "knowledge_point": "信号量的定义", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：P 操作必须是原子的（不可中断）。如果&ldquo;检查值&rdquo;和&ldquo;减 1&rdquo;分开执行，两个线程可能同时检查到值 > 0，然后都执行减 1，破坏互斥性。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在生产者-消费者问题中，可以先 P(mutex) 再 P(empty)，不会发生死锁。", "options": [], "answer": false, "knowledge_point": "生产者-消费者问题", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：若缓冲区满时生产者先 P(mutex) 获得锁，再 P(empty) 等待，持锁阻塞；消费者需要 P(mutex) 才能取数据，但锁被生产者持有，两者互相等待，发生死锁。必须先 P(empty) 再 P(mutex)。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "读者-写者第一类方案（读者优先）中，只要持续有读者进入，写者可能永远无法写入（写者饥饿）。", "options": [], "answer": true, "knowledge_point": "读者-写者问题", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：第一类方案中，后续读者只要在前一读者离开前进入，就能直接读（通过 readcnt 计数，第一个读者 P(w)，最后一个读者 V(w)）。若读者源源不断，写信号量 w 始终被占用，写者永远等待。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "可重入函数是线程安全函数的子集，所有可重入函数都是线程安全的，但反之不成立。", "options": [], "answer": true, "knowledge_point": "线程安全", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：可重入函数不依赖任何共享状态（无全局变量、无静态变量），因此天然是线程安全的。而线程安全函数可以通过加锁访问共享数据，但不满足可重入的条件。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "消除线程竞争条件的方法之一是：用 malloc 在堆上为每个线程分配独立数据副本，而不是传递同一栈变量的地址。", "options": [], "answer": true, "knowledge_point": "竞争条件的消除", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：若多个线程共享同一个栈变量的指针，当主线程修改该变量时，子线程读到的值取决于时序（竞争）。用 malloc 为每个线程分配独立副本，保证每个线程操作不同内存地址，消除竞争。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "信号（Signal）和信号量（Semaphore）本质上是同一种机制，都用于同步并发进程。", "options": [], "answer": false, "knowledge_point": "信号量与信号的区别", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：信号是内核向进程发送的异步通知（IPC 机制），用于处理系统事件；信号量是用于同步/互斥的计数器原语，通过 P/V 操作控制并发访问。两者名称相近但用途、机制完全不同。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述信号处理函数（Signal Handler）编写的 5 条安全准则（G1-G5），并说明在 handler 中为什么不能使用 printf()。", "options": [], "answer": "", "knowledge_point": "安全的信号处理", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>五条准则：</strong><br>G1：<strong>尽量简单</strong>——handler 只设置标志位，复杂逻辑在主程序处理。<br>G2：<strong>只调用 async-signal-safe 函数</strong>——仅使用 write()、_exit() 等可重入函数，禁止 printf/malloc/exit。<br>G3：<strong>保存和恢复 errno</strong>——handler 开始时保存 errno，结束时恢复，防止影响主程序的错误检测。<br>G4：<strong>访问共享数据时阻塞所有信号</strong>——防止 handler 与主程序并发访问同一数据产生竞争。<br>G5：<strong>用 volatile 声明全局变量</strong>——防止编译器将全局变量缓存到寄存器；flag 类变量使用 sig_atomic_t 保证读写原子性。<br><br><strong>printf() 不安全原因：</strong>printf() 内部使用静态缓冲区和全局状态（如 FILE* 结构），若主程序正在执行 printf() 时信号到来，handler 也调用 printf()，会破坏共享缓冲区，导致死锁或输出混乱。", "pitfall": ""}, {"type": "short", "points": 6, "question": "解释什么是临界区（Critical Section）和进度图（Progress Graph），以及&ldquo;不安全区域&rdquo;如何导致竞争条件。", "options": [], "answer": "", "knowledge_point": "进度图与临界区", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>临界区</strong>：访问共享变量（或其他共享资源）的代码段，任意时刻只允许一个线程执行该代码段，以保证数据一致性。<br><br><strong>进度图</strong>：以二维坐标表示两个并发线程的执行轨迹，横轴表示线程 1 的指令执行进度，纵轴表示线程 2 的指令执行进度，图上的路径代表一种可能的交错执行顺序。<br><br><strong>不安全区域</strong>：由两个线程临界区指令集合的笛卡尔积形成的矩形区域。若执行轨迹经过此区域，意味着两个线程同时在临界区内执行，共享变量被并发修改，导致更新丢失等竞争条件。安全的执行轨迹需绕过（不进入）不安全区域，这需要通过同步机制（如互斥锁）来保证。", "pitfall": ""}, {"type": "short", "points": 6, "question": "对比信号量的 CSAPP 风格定义和龙书（教材）风格定义的区别，并说明 P、V 操作的语义。", "options": [], "answer": "", "knowledge_point": "信号量的定义", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>CSAPP 风格</strong>：信号量值始终 <strong>非负</strong>。P 操作：若 S > 0 则 S--，否则阻塞当前线程等待；V 操作：S++，若有阻塞线程则唤醒一个。<br><br><strong>龙书风格</strong>：信号量值可以为 <strong>负数</strong>，负值的绝对值等于正在等待该信号量的线程/进程数。P 操作：S--，若 S < 0 则阻塞；V 操作：S++，若 S <= 0 则唤醒一个等待线程。<br><br><strong>共同语义</strong>：P 操作（wait）申请资源——减少信号量，可能阻塞；V 操作（signal）释放资源——增加信号量，可能唤醒等待者。P/V 操作必须是原子的，不可中断。互斥信号量初值为 1；同步信号量初值通常为 0（表示初始时等待某事件）。", "pitfall": ""}, {"type": "short", "points": 6, "question": "什么是四类非线程安全函数？请分别举例说明，并解释可重入函数与线程安全函数的区别。", "options": [], "answer": "", "knowledge_point": "线程安全", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>四类非线程安全函数：</strong><br>①不保护共享变量的函数——如无锁的 cnt++，多线程并发时产生竞争条件。<br>②在调用间保持状态的函数——如 rand()（使用 static 保存随机数种子状态），多线程共享同一状态。<br>③返回指向静态变量指针的函数——如 ctime()、gethostbyname()，返回指向全局/静态缓冲区的指针，多线程可能相互覆盖。<br>④调用非线程安全函数的函数——传递了非线程安全性。<br><br><strong>区别</strong>：线程安全函数通过加锁等机制保护共享数据，可以安全地被多线程调用，但每次调用仍依赖锁/全局状态。可重入函数完全不依赖任何共享状态（无全局变量、无静态变量、无锁），是线程安全的子集。可重入函数效率更高，可重入 ⊂ 线程安全。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述读者-写者问题的第一类（读者优先）方案。要求：说明问题场景、设计信号量、给出完整的读者和写者伪代码，并分析该方案的优缺点。", "options": [], "answer": "", "knowledge_point": "读者-写者问题", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>问题场景</strong>：共享数据（如数据库）可被多个读者同时读，但写者需要独占访问。多个读者不互斥，读者与写者、写者与写者互斥。<br><br><strong>信号量设计</strong>：<br>- mutex（初值 1）：保护读者计数器 readcnt 的互斥锁<br>- w（初值 1）：控制写者进入，也被第一个/最后一个读者使用<br>- readcnt（初值 0）：当前正在读的读者数量<br><br><strong>伪代码</strong>：<br><pre>读者：                   写者：\nP(mutex)               P(w)\nreadcnt++              // 写操作\nif readcnt == 1:       V(w)\n  P(w)     \nV(mutex)  \n// 读操作\nP(mutex)\nreadcnt--\nif readcnt == 0:\n  V(w)\nV(mutex)</pre><br><strong>优点</strong>：读者无需等待其他读者，读并发性高，适合读多写少的场景。<br><strong>缺点</strong>：只要持续有读者，写者可能永远无法写入（写者饥饿），不适合写操作时效性要求高的场景。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述进程同步的四条准则（空闲让进、忙则等待、有限等待、让权等待），并说明信号量的 P/V 操作如何满足这四条准则。", "options": [], "answer": "", "knowledge_point": "进程制约关系", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>四条准则</strong>：<br>①<strong>空闲让进</strong>：临界区空闲时，允许请求进入的进程立即进入，不能无故阻止。<br>②<strong>忙则等待</strong>：临界区已被占用时，其他请求进入的进程必须等待。<br>③<strong>有限等待</strong>：等待进入临界区的进程，必须在有限时间内得到满足，不能无限等待（防止饥饿）。<br>④<strong>让权等待</strong>：无法进入临界区的进程应主动放弃 CPU（阻塞），不能忙等（busy-waiting）浪费 CPU。<br><br><strong>P/V 操作如何满足</strong>：<br>- 空闲让进：mutex=1 时，P(mutex) 立即成功，进程进入临界区。<br>- 忙则等待：mutex=0 时，P(mutex) 将进程阻塞，不进入临界区。<br>- 有限等待：V(mutex) 会唤醒等待队列中的一个进程，公平调度保证有限时间内得到满足。<br>- 让权等待：P(mutex) 阻塞时进程进入阻塞队列（非忙等），CPU 让给其他进程，V(mutex) 时再唤醒。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "论述哲学家就餐问题：描述问题场景，解释朴素方案（每人先拿左筷子）为何产生死锁，并详细论述三种解决方案的原理和适用场景。", "options": [], "answer": "", "knowledge_point": "哲学家就餐问题", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>问题场景</strong>：5 位哲学家围坐圆桌，每人左右各一根筷子共 5 根，需要同时拥有左右两根筷子才能吃饭。哲学家交替思考和吃饭。<br><br><strong>死锁分析（朴素方案）</strong>：若所有哲学家同时拿起左边筷子，每人都持有一根筷子并等待右边筷子，而右边筷子被相邻哲学家持有，形成环形等待，满足死锁的四个必要条件（互斥、持有并等待、不可剥夺、循环等待），产生死锁。<br><br><strong>三种解决方案</strong>：<br><br>①<strong>限制人数法（计数信号量 sm=4）</strong>：最多允许 4 人同时尝试就餐，保证至少一人能获得两根筷子。原理：打破&ldquo;所有人同时等待&rdquo;的条件。适用：简单、通用。<br><br>②<strong>同时获取两根筷子</strong>：只有左右两根筷子都可用时才同时拿起，否则一根都不拿（原子操作）。原理：打破&ldquo;持有并等待&rdquo;条件。适用：系统支持原子操作时。<br><br>③<strong>奇偶序号法</strong>：奇数号哲学家先拿左筷子再拿右筷子，偶数号先拿右筷子再拿左筷子。原理：打破&ldquo;循环等待&rdquo;条件，至少有一对相邻哲学家拿筷子顺序相反，不会形成环形等待。适用：进程可以被区分编号时。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某工厂有一条生产线，包含以下角色：\n- 1 个原料供应商（Supplier）：持续生产原料，每次生产 1 单位，放入原料仓库\n- 2 个工人（Worker）：从原料仓库取原料（每次 1 单位），加工后放入成品仓库\n- 1 个质检员（Inspector）：从成品仓库取成品，每次检验 1 件\n\n约束条件：\n1. 原料仓库容量为 5（最多存 5 单位原料）\n2. 成品仓库容量为 3（最多存 3 件成品）\n3. 工人取原料时需互斥（不能两个工人同时取同一批原料）\n4. 工人放成品时需互斥（不能两个工人同时放入成品仓库）\n5. 供应商和质检员不需要互斥（各自独立操作）\n\n请：\n(1) 识别所有的同步/互斥关系（4分）\n(2) 定义所需的所有信号量及初值（4分）\n(3) 写出各角色的完整伪代码（8分）\n(4) 指出若移除原料互斥锁会产生什么问题（4分）", "options": [], "answer": "", "knowledge_point": "生产者-消费者问题", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br>\n<strong>(1) 同步/互斥关系（4分）</strong><br>\n- 同步关系①：供应商生产后，工人才能取（原料仓库的 full/empty）<br>\n- 同步关系②：工人生产后，质检员才能检验（成品仓库的 done/space）<br>\n- 互斥关系①：两工人取原料互斥（raw_mutex）<br>\n- 互斥关系②：两工人放成品互斥（product_mutex）<br><br>\n\n<strong>(2) 信号量定义（4分）</strong><br>\n<pre>\nraw_empty   = Semaphore(5)   # 原料仓库空槽数（初值=容量5）\nraw_full    = Semaphore(0)   # 原料仓库原料数（初值=0）\nraw_mutex   = Semaphore(1)   # 工人取原料互斥锁\nprod_space  = Semaphore(3)   # 成品仓库空槽数（初值=容量3）\nprod_done   = Semaphore(0)   # 成品仓库成品数（初值=0）\nprod_mutex  = Semaphore(1)   # 工人放成品互斥锁\n</pre><br>\n\n<strong>(3) 伪代码（8分）</strong><br>\n<pre>\n供应商（Supplier）：\n  while True:\n    生产 1 单位原料\n    P(raw_empty)          # 等待原料仓库有空位\n    放入原料仓库\n    V(raw_full)           # 通知工人有原料可取\n\n工人（Worker）：\n  while True:\n    P(raw_full)           # 等待原料仓库有原料\n    P(raw_mutex)          # 加锁：互斥取原料\n    从原料仓库取 1 单位原料\n    V(raw_mutex)          # 解锁\n    V(raw_empty)          # 通知供应商有空位\n    加工原料 --> 成品\n    P(prod_space)         # 等待成品仓库有空位\n    P(prod_mutex)         # 加锁：互斥放成品\n    将成品放入成品仓库\n    V(prod_mutex)         # 解锁\n    V(prod_done)          # 通知质检员有成品\n\n质检员（Inspector）：\n  while True:\n    P(prod_done)          # 等待成品仓库有成品\n    从成品仓库取 1 件成品\n    V(prod_space)         # 通知工人有空位\n    检验成品\n</pre><br>\n\n<strong>(4) 移除 raw_mutex 的问题（4分）</strong><br>\n若移除 raw_mutex，两个工人可能同时执行取原料操作：<br>\n- 两人同时检测到 raw_full > 0（P(raw_full) 均成功）<br>\n- 两人同时从同一位置取原料，导致取到相同原料（重复消费）<br>\n- 实际消耗了 1 单位原料但 raw_full 减少了 2，导致计数不一致<br>\n- 严重时导致仓库索引越界、数据损坏等问题<br>\n这是典型的竞争条件，必须用互斥锁保护临界区（取原料操作）。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第2章：进程与线程</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第2章：进程与线程</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "下列关于进程与程序关系的描述，正确的是（）", "options": ["进程是静态的，程序是动态的", "一个程序只能对应一个进程", "进程是程序的一次执行过程，具有动态性", "程序与进程一一对应"], "answer": 2, "knowledge_point": "模块一：进程的概念", "diagnosis_hint": "混淆进程与程序的动态/静态关系", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：进程是动态的（程序的一次执行实例），程序是静态的（磁盘上的代码文件）。同一程序可以产生多个并发进程（如多个浏览器标签）。", "pitfall": "A选项颠倒了动态/静态关系"}, {"type": "choice", "points": 2, "question": "PCB（进程控制块）中不包含以下哪类信息（）", "options": ["进程标识信息（PID）", "处理器状态信息（寄存器内容）", "进程的源代码", "进程控制信息（文件描述符表）"], "answer": 2, "knowledge_point": "模块二：PCB结构", "diagnosis_hint": "不清楚PCB包含哪些信息", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：PCB包含进程标识、处理器状态、调度信息、控制信息四类，但不包含源代码。源代码存放在代码段，由程序段保存，不属于PCB。", "pitfall": "PCB是进程的管理信息，不包含代码本身"}, {"type": "choice", "points": 2, "question": "在进程的五状态模型中，下列状态转换不可能直接发生的是（）", "options": ["就绪 --> 运行", "运行 --> 就绪", "就绪 --> 阻塞", "阻塞 --> 就绪"], "answer": 2, "knowledge_point": "模块三：进程状态模型", "diagnosis_hint": "不清楚哪些状态转换是非法的", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：进程处于就绪态时没有CPU，无法发出I/O请求，因此不能直接进入阻塞态。必须先被调度进入运行态，再由运行态发出I/O请求进入阻塞态。", "pitfall": "就绪-->阻塞和阻塞-->运行都是非法转换"}, {"type": "choice", "points": 2, "question": "关于僵尸进程，以下描述正确的是（）", "options": ["僵尸进程是父进程先于子进程结束形成的进程", "僵尸进程仍在执行，只是无法被调度", "僵尸进程已执行完毕，但其PCB尚未被父进程wait()回收", "僵尸进程不占用任何系统资源"], "answer": 2, "knowledge_point": "模块四：进程API", "diagnosis_hint": "混淆僵尸进程与孤儿进程", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：僵尸进程是子进程已调用exit()完成终止，但父进程尚未调用wait()回收，其进程表项（PCB）仍然存在。A描述的是孤儿进程。", "pitfall": "僵尸进程不在运行，是已结束但未被回收的进程"}, {"type": "choice", "points": 2, "question": "fork()系统调用成功时，在父进程中的返回值是（）", "options": ["0", "子进程的PID（正整数）", "父进程的PID", "1"], "answer": 1, "knowledge_point": "模块四：进程API", "diagnosis_hint": "混淆fork()在父子进程中的返回值", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：fork()调用一次返回两次：在父进程中返回子进程的PID（正整数）；在子进程中返回0；失败返回-1。", "pitfall": "0是子进程中的返回值，父进程中返回的是子进程PID"}, {"type": "choice", "points": 2, "question": "下列IPC方式中，通信速度最快的是（）", "options": ["消息传递", "套接字（Socket）", "管道（Pipe）", "共享内存"], "answer": 3, "knowledge_point": "模块六：IPC", "diagnosis_hint": "不清楚各IPC方式的性能差异", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：共享内存是最快的IPC方式，因为进程直接读写同一块物理内存，无需数据拷贝。其他方式（管道、消息传递、套接字）都需要内核缓冲区，存在数据拷贝开销。", "pitfall": "共享内存速度最快但需要配合同步机制"}, {"type": "choice", "points": 2, "question": "关于多对一线程模型，以下说法正确的是（）", "options": ["可充分利用多核处理器的并行性", "一个线程执行阻塞系统调用会导致整个进程阻塞", "每个用户线程对应一个内核线程", "Linux的NPTL实现采用了此模型"], "answer": 1, "knowledge_point": "模块九：多线程模型", "diagnosis_hint": "混淆多对一与一对一模型的特性", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：多对一模型所有用户线程共享一个内核线程，当某线程发起阻塞系统调用，内核阻塞该线程对应的唯一内核线程，导致整个进程被阻塞。C是一对一模型的特征。Linux NPTL采用一对一模型。", "pitfall": "多对一模型无法多核并行且一线程阻塞全进程阻塞"}, {"type": "choice", "points": 2, "question": "异常控制流ECF中，缺页故障（Page Fault）属于哪种类型（）", "options": ["中断（Interrupt）", "陷阱（Trap）", "故障（Fault）", "终止（Abort）"], "answer": 2, "knowledge_point": "模块五：ECF", "diagnosis_hint": "不清楚ECF四种类型的区分", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：缺页故障是当前指令访问未加载的页时触发的可恢复错误，属于Fault类型。OS处理成功后重新执行该指令。中断是异步的外部事件；陷阱是主动的系统调用；终止是不可恢复错误。", "pitfall": "故障处理成功后重新执行故障指令（不是下一条）"}, {"type": "choice", "points": 2, "question": "关于线程与进程的关系，以下说法正确的是（）", "options": ["线程是资源分配的基本单位，进程是调度的基本单位", "不管系统是否支持线程，进程都是资源分配的基本单位", "同一进程的各个线程拥有各自独立的地址空间", "引入线程会增加程序执行时的时空开销"], "answer": 1, "knowledge_point": "模块八：进程与线程对比", "diagnosis_hint": "混淆进程和线程各自是哪种基本单位", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：引入线程后，进程依然是资源分配和保护的基本单位，线程是CPU调度的基本单位（A选项正好颠倒了）。同一进程内线程共享地址空间。引入线程是为了减少时空开销，不是增加。", "pitfall": "A是最常见的陷阱：进程=资源分配，线程=调度"}, {"type": "choice", "points": 2, "question": "在同一进程内，线程A切换到线程B时，会发生什么（）", "options": ["引起进程切换，也需要切换地址空间", "不引起进程切换，但需要保存/恢复寄存器和PC", "不引起进程切换，也不需要任何上下文切换", "引起进程切换，但不需要切换地址空间"], "answer": 1, "knowledge_point": "模块八：进程与线程对比", "diagnosis_hint": "混淆同进程内线程切换与进程切换的区别", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：同一进程内线程切换不涉及进程切换（地址空间不变，无需TLB刷新），但仍需保存/恢复线程私有的寄存器、PC、栈指针，这是轻量级的上下文切换。", "pitfall": "线程切换仍有上下文切换，只是比进程切换开销小"}, {"type": "tf", "points": 1, "question": "进程的动态性是其最基本的特征，它反映了进程是程序的一次执行过程这一本质。", "options": [], "answer": true, "knowledge_point": "模块二：进程五大特征", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：进程的五大特征（动态性、并发性、独立性、异步性、结构性）中，动态性是最基本的特征，体现了进程的本质——有生命周期（创建-运行-消亡）的程序执行过程。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "当进程被换出到磁盘（挂起）时，其PCB也随之被换出到磁盘，以节省内存空间。", "options": [], "answer": false, "knowledge_point": "模块二：PCB结构", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：PCB必须常驻内存，即使进程被换出磁盘（挂起），其PCB依然保留在内存中，否则OS无法找到和管理该进程。", "pitfall": "挂起的是进程的内存映像，不是PCB"}, {"type": "tf", "points": 1, "question": "在进程五状态模型中，处于就绪状态的进程可以直接转换到阻塞状态。", "options": [], "answer": false, "knowledge_point": "模块三：进程状态模型", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：就绪态进程没有CPU，无法执行指令，因此不能发出I/O请求，不能主动进入阻塞态。必须先经过就绪-->运行转换，再由运行态转入阻塞态。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "fork()创建的子进程与父进程共享同一份物理内存，写时复制（COW）确保写操作时才分配新页面。", "options": [], "answer": true, "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：现代OS的fork()实现使用写时复制（Copy-On-Write）技术，父子进程最初共享同一物理页（只读映射），只有在某进程尝试写入时才为其分配新的物理页并复制内容，从而推迟了实际内存复制。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "僵尸进程（Zombie Process）是已调用exit()终止但父进程尚未调用wait()回收的进程，其进程表项仍然存在。", "options": [], "answer": true, "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：僵尸进程是已完成执行（exit调用完成）但进程表项（PCB）还未被父进程wait()回收的进程。大量僵尸进程会耗尽进程表条目，导致系统无法创建新进程。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "线程拥有自己独立的虚拟地址空间，可以与其他线程隔离运行。", "options": [], "answer": false, "knowledge_point": "模块七：线程概念", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：线程没有独立的虚拟地址空间，它与同一进程的其他线程共享进程的地址空间（代码段、数据段、堆）。线程私有的只有TCB、寄存器、栈。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "用户级线程的调度和切换完全在用户空间完成，内核感知不到这些线程的存在。", "options": [], "answer": true, "knowledge_point": "模块九：多线程模型", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：用户级线程（ULT）由用户态线程库管理，线程的创建、切换、同步在用户空间完成，不需要陷入内核，开销极小。内核只看到进程（内核线程），不感知内部的用户线程。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "execve()系统调用成功执行后，会返回到调用它的程序继续执行后续代码。", "options": [], "answer": false, "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：execve()成功时会用新程序完全替换当前进程的地址空间（代码、数据、栈），因此不会返回到原程序。exec只有在出错（如文件不存在）时才会返回-1。", "pitfall": "exec成功不返回，只有失败才返回"}, {"type": "tf", "points": 1, "question": "在多对一线程模型中，所有用户线程共享唯一的内核线程，无法在多核处理器上实现真正的并行执行。", "options": [], "answer": true, "knowledge_point": "模块九：多线程模型", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：多对一模型中所有用户线程映射到一个内核线程，内核一次只能在一个核心上调度该内核线程，因此无法在多核上并行。这是多对一模型的根本局限。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "线程可以脱离进程而独立存在和运行，是比进程更小的能独立运行的基本单位。", "options": [], "answer": false, "knowledge_point": "模块七：线程概念", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：线程是进程内的执行单元，不能脱离进程独立运行。线程没有独立的资源，依赖进程提供的地址空间和系统资源。进程才是独立运行的基本单位。", "pitfall": "线程不能脱离进程运行，这是高频错误选项"}, {"type": "short", "points": 6, "question": "简述进程的五大特征及其含义。", "options": [], "answer": "", "knowledge_point": "模块二：进程五大特征", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>进程的五大特征：<br>①<strong>动态性</strong>：进程是程序的一次执行过程，有创建、运行、消亡的生命周期，是最基本的特征。<br>②<strong>并发性</strong>：多个进程可在同一时间段内并发执行，是引入进程的根本原因。<br>③<strong>独立性</strong>：进程是独立获得资源、独立调度运行的基本单位。<br>④<strong>异步性</strong>：各进程以不可预知的速度异步推进，是进程调度与同步问题的来源。<br>⑤<strong>结构性</strong>：进程由PCB、程序段、数据段三部分组成。", "pitfall": ""}, {"type": "short", "points": 6, "question": "说明进程五状态模型的各状态及主要转换路径，并指出哪两个转换不可能直接发生，说明原因。", "options": [], "answer": "", "knowledge_point": "模块三：进程状态模型", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>五状态</strong>：新建、就绪、运行、阻塞、终止。<br><strong>主要转换</strong>：新建-->就绪（初始化完成）；就绪-->运行（调度dispatch）；运行-->就绪（时间片到期被抢占）；运行-->阻塞（进程主动等待I/O等事件）；阻塞-->就绪（等待事件发生）；运行-->终止（进程完成或被终止）。<br><strong>不可能发生的转换</strong>：<br>①就绪-->阻塞：就绪态进程没有CPU，无法执行指令发出I/O请求，因此不能直接进入阻塞态。<br>②阻塞-->运行：阻塞态进程即使等待事件发生，也需先转为就绪态，经过重新调度才能进入运行态。", "pitfall": ""}, {"type": "short", "points": 6, "question": "什么是僵尸进程？什么是孤儿进程？如何在程序中避免产生僵尸进程？", "options": [], "answer": "", "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>僵尸进程</strong>：子进程已调用exit()完成执行，但父进程尚未调用wait()回收其进程表项（PCB），该子进程称为僵尸进程。大量僵尸进程会耗尽进程表，导致无法创建新进程。<br><strong>孤儿进程</strong>：父进程先于子进程结束，子进程变为孤儿进程。Linux会将其父进程改为init（PID=1），由init负责等待和回收。<br><strong>避免僵尸进程的方法</strong>：①父进程及时调用wait()或waitpid()回收子进程；②使用SIGCHLD信号处理函数，在收到信号时调用wait()；③通过两次fork让子进程成为孤儿，由init自动回收。", "pitfall": ""}, {"type": "short", "points": 6, "question": "从资源分配、通信方式、切换开销、容错性四个维度比较进程与线程的主要区别。", "options": [], "answer": "", "knowledge_point": "模块八：进程与线程对比", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①<strong>资源分配</strong>：进程是资源分配和保护的基本单位，拥有独立的虚拟地址空间；线程是CPU调度的基本单位，共享所属进程的地址空间和资源。<br>②<strong>通信方式</strong>：进程间通信需要IPC机制（管道、共享内存、消息传递等）；同进程内的线程直接读写共享内存（但需要同步机制防止竞争）。<br>③<strong>切换开销</strong>：进程切换开销大（需切换地址空间、TLB刷新）；线程切换开销小（同地址空间内，无需切换页表）。<br>④<strong>容错性</strong>：一个进程崩溃不影响其他进程；同一进程内一个线程崩溃可能导致整个进程崩溃。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述进程间通信（IPC）的五种主要方式，说明各自的工作原理、优缺点和适用场景。", "options": [], "answer": "", "knowledge_point": "模块六：IPC", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①<strong>共享内存</strong>（Shared Memory）：多个进程将同一块物理内存映射到各自地址空间，直接读写，无需数据拷贝。<em>优点</em>：速度最快。<em>缺点</em>：需配合信号量等同步机制，否则产生竞争条件。<em>适用</em>：同一机器上高性能数据共享。<br>②<strong>消息传递</strong>（Message Passing）：进程通过send/receive原语交换消息，内核负责缓冲和传递。<em>优点</em>：实现简单，无需显式同步，适合分布式。<em>缺点</em>：数据拷贝有开销。<em>适用</em>：分布式系统、微内核OS。<br>③<strong>管道</strong>（Pipe）：单向字节流FIFO通道，内核维护缓冲区。匿名管道只用于父子进程；命名管道（FIFO）可用于任意进程。<em>缺点</em>：单向，容量有限。<em>适用</em>：Shell命令管道。<br>④<strong>套接字</strong>（Socket）：可用于同机或跨网络进程通信。<em>优点</em>：最通用，支持网络。<em>缺点</em>：建立连接开销较大。<em>适用</em>：网络服务、跨机通信。<br>⑤<strong>远程过程调用</strong>（RPC）：让进程透明地调用远程函数，底层通过网络消息实现。<em>优点</em>：编程抽象高，透明。<em>缺点</em>：网络延迟，需处理失败。<em>适用</em>：分布式应用（微服务、gRPC）。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述多线程模型中多对一、一对一、多对多三种方案的工作原理、优缺点及代表系统。", "options": [], "answer": "", "knowledge_point": "模块九：多线程模型", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①<strong>多对一模型</strong>：多个用户级线程映射到一个内核线程。由用户态线程库管理，内核不感知用户线程。<em>优点</em>：线程管理无需陷入内核，开销小。<em>缺点</em>：一个线程阻塞导致整个进程阻塞；无法利用多核并行。<em>代表</em>：GNU Portable Threads（已少用）。<br>②<strong>一对一模型</strong>：每个用户级线程对应一个内核级线程。<em>优点</em>：一线程阻塞不影响其他；可在多核并行。<em>缺点</em>：每创建用户线程须创建内核线程，开销大，系统限制最大线程数。<em>代表</em>：Linux（NPTL）、Windows。<br>③<strong>多对多模型</strong>：将N个用户线程多路复用到M个（M≤N）内核线程。<em>优点</em>：结合了前两者优点——可创建大量用户线程，单线程阻塞不影响其他，可多核并行。<em>缺点</em>：实现最复杂。<em>代表</em>：早期Solaris（现已转向一对一）。<br>总结：当前主流OS（Linux/Windows）普遍采用一对一模型，原因是多核处理器普及后，其并行性优势远超内核线程创建开销的不足。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "论述Unix中fork()、exec()、exit()、wait()四个系统调用的工作原理，并说明它们如何协作完成【创建子进程运行新程序并等待其结束】的完整流程。", "options": [], "answer": "", "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>工作原理</strong>：<br>①<strong>fork()</strong>：复制当前进程，创建子进程。子进程得到父进程虚拟地址空间的写时复制（COW）副本和文件描述符的副本。fork()调用一次返回两次：父进程中返回子进程PID，子进程中返回0。<br>②<strong>exec()</strong>（execve等）：加载新程序替换当前进程的地址空间（代码、数据、栈全部替换），成功时不返回。失败返回-1。<br>③<strong>exit()</strong>：进程正常终止，刷新I/O缓冲区，执行清理函数，通知父进程，内核释放大部分资源，但保留PCB。<br>④<strong>wait()</strong>：父进程阻塞等待任意子进程终止，回收子进程PCB资源，获取退出状态。<br><strong>协作流程</strong>（Shell执行命令的典型模式）：<br>（1）父进程调用fork()，创建子进程副本；<br>（2）子进程（fork返回0分支）调用execve()，加载目标程序，子进程地址空间被新程序替换；<br>（3）子进程执行新程序，完成后调用exit()退出，PCB转为僵尸状态；<br>（4）父进程调用wait()，阻塞直到子进程退出，回收子进程PCB，获得退出状态码，僵尸进程被彻底消除。<br>这种fork-exec模式是Unix/Linux中启动新进程的标准方法，Shell每次执行命令都使用此模式。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "【综合分析题】阅读以下C程序片段并回答问题：\n\n```c\n#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nint main() {\n    pid_t pid;\n    int count = 0;\n    pid = fork();\n    if (pid == 0) {\n        count++;\n        printf(\"Child: count = %d\\n\", count);\n        exit(0);\n    } else if (pid > 0) {\n        count++;\n        printf(\"Parent: count = %d\\n\", count);\n        wait(NULL);\n    }\n    return 0;\n}\n```\n\n请回答：\n(1) 程序运行后，父进程和子进程的count值分别是多少？为什么两个进程的count不互相影响？（5分）\n(2) wait(NULL)的作用是什么？若去掉wait(NULL)，在子进程结束后、父进程退出前这段时间内，子进程处于什么状态？（5分）\n(3) 若将上述程序中的单次fork()改为连续三次fork()（即：fork(); fork(); fork();），最终系统中共有多少个进程（包括原始进程）？请画出进程创建树。（5分）\n(4) 若父进程需要同时运行多个不同的程序（如同时运行ls和grep），应如何修改代码？请简述fork+exec模式的使用方法。（5分）", "options": [], "answer": "", "knowledge_point": "模块四：进程API", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>(1)</strong> 父进程count=1，子进程count=1。原因：fork()使用写时复制（COW）技术，父子进程各自拥有独立的count变量副本（虽然初始时共享物理页，但各自执行count++时会触发COW，分配独立的物理页）。因此父子进程的count修改互不影响，都从0加1变为1。<br><br><strong>(2)</strong> wait(NULL)的作用：①阻塞父进程直到子进程结束；②回收子进程的PCB资源（防止僵尸进程）；③可获取子进程的退出状态。若去掉wait(NULL)，子进程调用exit(0)退出后，其大部分资源被释放，但PCB仍然保留，子进程变为<strong>僵尸进程（Zombie）</strong>，直到父进程退出时由init进程回收，或父进程调用wait()为止。<br><br><strong>(3)</strong> 连续3次fork()共产生2³=<strong>8个进程</strong>。进程创建树：P0 fork() --> P0, P1；P0和P1各fork() --> P0, P1, P2, P3；这4个进程各fork() --> 共8个进程（P0到P7）。每次fork()时，当前所有存活进程都会各自fork一次，进程数每次翻倍。<br><br><strong>(4)</strong> fork+exec模式：fork创建子进程后，在子进程中立即调用exec加载新程序。示例：先fork一个子进程运行ls（子进程调用execve(\"/bin/ls\", ...)），再fork一个子进程运行grep，父进程调用wait()两次分别等待两个子进程结束。exec会替换子进程的地址空间，因此不影响父进程。这是Shell执行外部命令的标准方法。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

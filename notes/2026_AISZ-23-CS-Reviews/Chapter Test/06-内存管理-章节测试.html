@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第六章：内存管理</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第六章：内存管理</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "以下哪种重定位方式最常见，且支持进程在内存中移动？", "options": ["编译时重定位", "链接时重定位", "载入时重定位", "运行时重定位"], "answer": 3, "knowledge_point": "重定位时机", "diagnosis_hint": "混淆载入时与运行时重定位", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：运行时重定位在每次访存时由MMU动态完成地址翻译，程序代码本身不修改，因此进程可在内存中任意移动（换出换入后放到不同位置）。编译时产生绝对代码，不可移动；载入时重定位一旦载入后同样不能移动。", "pitfall": "载入时重定位已经在装入时修改了代码中的地址，之后不能再移动；运行时重定位则始终保持逻辑地址不变"}, {"type": "choice", "points": 2, "question": "在可变分区分配中，首次适配（First-Fit）算法的主要优点是？", "options": ["产生的空闲碎片最少", "总能找到最合适的分区", "搜索速度快", "不会产生内部碎片"], "answer": 2, "knowledge_point": "分区分配算法", "diagnosis_hint": "不了解各分配算法的特点", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：首次适配找到第一个满足要求的空闲分区就停止，不需要遍历全部空闲分区表，速度最快。最佳适配和最差适配都需要搜索整个空闲分区表。", "pitfall": "可变分区本身不产生内部碎片，但A、B的描述不是首次适配的特点"}, {"type": "choice", "points": 2, "question": "外部碎片是指？", "options": ["分区内未被使用的空间", "不连续且无法分配的空闲内存空间", "页内未使用的空间", "段表中无效的表项"], "answer": 1, "knowledge_point": "碎片问题", "diagnosis_hint": "混淆内部碎片与外部碎片", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：外部碎片是进程不断装入和移出后，内存中形成的许多小的不连续空闲区域，总量可能很大但无法满足大内存请求。内部碎片是A的描述（固定分区的问题）。", "pitfall": "外部碎片的关键是'不连续'，总量可能够用但因不连续而无法分配"}, {"type": "choice", "points": 2, "question": "32位系统，页面大小4KB，则页内偏移占多少位？", "options": ["10位", "12位", "20位", "22位"], "answer": 1, "knowledge_point": "分页地址格式", "diagnosis_hint": "不熟悉页内偏移位数计算", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：4KB = 2¹²字节，所以页内偏移需要12位来寻址页内每个字节。剩余32-12=20位用于页号，即最多有2²⁰=1M个页。", "pitfall": "页大小=2^k，则偏移占k位；4KB=4×1024=2^12，所以是12位"}, {"type": "choice", "points": 2, "question": "多级页表相比单级页表，主要解决了什么问题？", "options": ["减少了地址翻译的访存次数", "减少了页表本身占用的内存空间", "消除了内部碎片", "提高了TLB命中率"], "answer": 1, "knowledge_point": "多级页表", "diagnosis_hint": "误以为多级页表提高了访存效率", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：单级页表需要为整个逻辑地址空间建立页表项（32位系统4MB），大部分逻辑地址根本不会用到。多级页表只为实际使用的地址建立页表项，顶层目录常驻内存，未使用的部分不需要分配二级页表，大幅节省内存。访存次数实际上增多了（每级多一次访存）。", "pitfall": "多级页表的访存次数反而更多：n级页表需要n+1次访存"}, {"type": "choice", "points": 2, "question": "TLB（Translation Look-aside Buffer）的作用是？", "options": ["缓存最近使用的页表项，减少访问内存页表的次数", "存储整个页表，替代内存中的页表", "实现多级页表的第一级缓存", "保存进程上下文，加速进程切换"], "answer": 0, "knowledge_point": "TLB", "diagnosis_hint": "不清楚TLB的定位和作用", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：TLB是一组关联快速寄存器，缓存最近访问过的页表项（页号-->页框号映射）。TLB命中时只需一次内存访问（取数据），不命中时才需查内存页表（多次访存）。程序的局部性使得TLB命中率通常很高（可达98%以上）。", "pitfall": "TLB容量很小（64~1024条），不能存储完整页表"}, {"type": "choice", "points": 2, "question": "TLB命中率为80%，TLB访问时间20ns，内存访问时间100ns，有效访问时间（EAT）是？", "options": ["120ns", "140ns", "160ns", "200ns"], "answer": 1, "knowledge_point": "TLB有效访问时间计算", "diagnosis_hint": "EAT公式代入错误", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：EAT = HitRate×(TLB+MA) + (1-HitRate)×(TLB+2×MA)<br>= 0.8×(20+100) + 0.2×(20+200)<br>= 0.8×120 + 0.2×220<br>= 96 + 44 = 140ns<br>未命中时需访问内存页表一次(100ns)再取数据一次(100ns)，共200ns+TLB。", "pitfall": "TLB未命中时要：TLB查找(20ns) + 内存查页表(100ns) + 内存取数据(100ns) = 220ns"}, {"type": "choice", "points": 2, "question": "分段内存管理中，段表的每个表项不包含以下哪个字段？", "options": ["段基址", "段长度", "保护位", "页框号"], "answer": 3, "knowledge_point": "段表结构", "diagnosis_hint": "混淆段表项和页表项的字段", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：段表项包含段号、基址（段在内存中的起始物理地址）、长度（用于越界检查）、保护位（读/写/执行权限）。页框号是分页管理中页表项的字段，不属于段表。", "pitfall": "页框号属于页表项（PTE），段表项中没有页框号"}, {"type": "choice", "points": 2, "question": "Intel x86保护模式下，CR3寄存器的作用是？", "options": ["保存当前进程的段选择符", "保存当前进程页目录表的物理地址", "保存TLB的基地址", "保存GDT的基地址"], "answer": 1, "knowledge_point": "Intel x86内存管理", "diagnosis_hint": "混淆各控制寄存器的用途", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：CR3寄存器存放当前进程页目录表（一级页表）的物理基地址。进程切换时，OS将新进程的页目录基址写入CR3，硬件就能找到对应的页表完成地址翻译。GDTR寄存器保存GDT基址。", "pitfall": "GDT基址由GDTR保存，不是CR3；CR3专门指向当前进程的页目录"}, {"type": "choice", "points": 2, "question": "以下关于分页与分段的比较，正确的是？", "options": ["分页产生外部碎片，分段不产生外部碎片", "分段产生外部碎片，分页不产生外部碎片", "分页和分段都产生外部碎片", "分页和分段都不产生外部碎片"], "answer": 1, "knowledge_point": "分页与分段对比", "diagnosis_hint": "混淆内外部碎片产生的机制", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：分段使用可变大小的段，各段分散放置在内存中，随着段的装入和移出会产生不连续的空闲区域，即外部碎片。分页使用固定大小的页框，物理内存分配以页框为单位，不存在外部碎片；但最后一页可能未填满，产生内部碎片。", "pitfall": "分页消除外部碎片但有内部碎片（最多一页）；分段有外部碎片但无内部碎片"}, {"type": "tf", "points": 1, "question": "运行时重定位是在程序装入内存时一次性修改程序中所有地址的过程。", "options": [], "answer": false, "knowledge_point": "运行时重定位", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：运行时重定位是在程序运行过程中，每次执行访存指令时由MMU硬件动态完成逻辑地址到物理地址的翻译，并不修改程序代码本身。装入时一次性修改代码的是'载入时重定位'，不是运行时重定位。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "最佳适配（Best-Fit）算法能产生最少的外部碎片。", "options": [], "answer": false, "knowledge_point": "分区分配算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：最佳适配每次选最小满足需求的分区，切割后剩余的零头非常小，往往无法再分配给其他进程，反而会产生大量细小的外部碎片。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "分页管理不会产生任何碎片。", "options": [], "answer": false, "knowledge_point": "分页碎片", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：分页消除了外部碎片，但仍存在内部碎片——进程最后一页通常不会恰好填满整个页框，未使用的部分就是内部碎片，最大为一个页面大小减1字节。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "多级页表与单级页表相比，访问一个内存数据所需的内存访问次数更多。", "options": [], "answer": true, "knowledge_point": "多级页表访存次数", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：单级页表需要2次内存访问（查页表+取数据），二级页表需3次，n级需n+1次。多级页表的优势是节省页表自身占用的内存空间，而非减少访存次数。TLB可以弥补这一性能损失。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "TLB中的所有条目在进程切换时必须全部清空（flush）。", "options": [], "answer": false, "knowledge_point": "TLB进程切换", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：基本设计下进程切换需要flush TLB，但如果TLB条目中保存了ASID（地址空间标识符），每个进程有唯一ASID，则切换时无需flush——硬件可以区分不同进程的条目，只需加载新进程的ASID即可。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在Intel x86保护模式下，段寄存器（如CS、DS）直接存放段的物理基地址。", "options": [], "answer": false, "knowledge_point": "Intel x86保护模式", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：实模式下段寄存器存放段基址；保护模式下段寄存器存放的是段选择符（Selector），包含GDT/LDT的索引和权限级别（RPL），需要通过查GDT或LDT才能得到段基址。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "分段管理中，一个进程的所有段必须连续存放在物理内存中。", "options": [], "answer": false, "knowledge_point": "分段内存管理", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：分段管理的优势之一就是各段可以分散存放在物理内存的不同位置，通过段表记录每个段的基址。只要求每个段内部是连续存放的，不同段之间可以不连续。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "逻辑地址空间的大小可以超过物理内存的实际大小。", "options": [], "answer": true, "knowledge_point": "逻辑地址与物理地址", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：逻辑地址空间的大小由地址位宽决定（如32位系统有4GB逻辑地址空间），与实际物理内存大小无关。操作系统通过虚拟内存技术（下章内容）可以让进程使用比物理内存更大的地址空间。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "内存紧缩（Compaction）可以消除内部碎片。", "options": [], "answer": false, "knowledge_point": "碎片与内存紧缩", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：内存紧缩是将所有进程向内存一端移动，将多个小的外部碎片合并成一个大的空闲区域，针对的是外部碎片。内部碎片在分区内部，无法通过移动进程来消除。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "TLB有效的根本原因是程序访存具有局部性。", "options": [], "answer": true, "knowledge_point": "TLB工作原理", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：程序具有时间局部性（刚访问过的地址很快还会再访问）和空间局部性（访问某地址后很快访问相邻地址），导致短时间内页号集中在少数几个页上，64~1024条TLB就能覆盖大部分访存请求，命中率极高。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述分页内存管理的基本原理，并说明为什么分页能消除外部碎片但仍存在内部碎片。", "options": [], "answer": "", "knowledge_point": "分页内存管理", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>基本原理</strong>：将逻辑地址空间和物理内存都划分为大小相等的固定块（页和页框），每页大小通常为4KB。每个进程维护一张页表，记录逻辑页号到物理页框号的映射。访存时，MMU将逻辑地址拆分为页号和页内偏移，通过页表查到对应页框号，物理地址=页框号×页大小+偏移。<br>\n<strong>消除外部碎片</strong>：物理内存以页框为单位分配，页框大小固定且相同，任何空闲页框都可以分配给任何进程的任何页，不会出现\"总空间够但不连续\"的情况，因此没有外部碎片。<br>\n<strong>仍有内部碎片</strong>：进程的最后一页通常无法恰好填满整个页框，页框中剩余未使用的空间无法分给其他进程，这就是内部碎片，最大为页大小-1字节。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述TLB的工作原理，并用公式计算：TLB访问时间10ns，内存访问时间100ns，TLB命中率95%时的有效访问时间（EAT）。", "options": [], "answer": "", "knowledge_point": "TLB有效访问时间", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>TLB工作原理</strong>：TLB是一组关联快速寄存器，缓存最近使用的页表项（页号-->页框号）。访存时，同时用页号查TLB和内存页表（并行）。若TLB命中（Hit），直接用TLB中的页框号计算物理地址，只需一次内存访问取数据；若TLB未命中（Miss），需访问内存中的页表获取页框号，再访问内存取数据，共两次内存访问，并将该页表项装入TLB。<br>\n<strong>EAT计算</strong>：<br>\nEAT = HitRate×(TLB + MA) + (1-HitRate)×(TLB + 2×MA)<br>\n= 0.95×(10+100) + 0.05×(10+200)<br>\n= 0.95×110 + 0.05×210<br>\n= 104.5 + 10.5 = <strong>115ns</strong>", "pitfall": ""}, {"type": "short", "points": 6, "question": "比较连续内存分配的首次适配、最佳适配、最差适配三种算法，各自的特点和适用场景是什么？", "options": [], "answer": "", "knowledge_point": "分区分配算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>首次适配（First-Fit）</strong>：从头扫描空闲分区表，分配第一个满足需求的分区。特点：速度快，不需要遍历全表；倾向于将大分区留在后面，有利于大进程请求。适用于追求速度的场景。<br>\n<strong>最佳适配（Best-Fit）</strong>：扫描全部空闲分区，选择最小的满足需求的分区。特点：速度慢（遍历全表）；切割后剩余空间最小，会产生大量细小的外部碎片，实践中效果往往不如首次适配。<br>\n<strong>最差适配（Worst-Fit）</strong>：扫描全部空闲分区，选择最大的分区。特点：速度慢（遍历全表）；切割后剩余的空间较大，适合后续仍会有中等大小请求的场景，避免产生过多小碎片。<br>\n总体上首次适配在实践中性能最好。", "pitfall": ""}, {"type": "short", "points": 6, "question": "在32位两级页表系统中（页目录10位，页号10位，页内偏移12位），给定逻辑地址0xC030F000，计算其页目录号和页号分别是多少？", "options": [], "answer": "", "knowledge_point": "多级页表地址计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n逻辑地址 0xC030F000 的二进制表示（32位）：<br>\n0xC030F000 = 1100 0000 0011 0000 1111 0000 0000 0000<br>\n地址格式：[31:22]=页目录号（10位），[21:12]=页号（10位），[11:0]=页内偏移（12位）<br>\n<br>\n<strong>页目录号</strong>：取第31~22位 = 1100 0000 00 = 0x300 = <strong>768</strong><br>\n<strong>页号</strong>：取第21~12位 = 11 0000 1111 = 0x30F >> 实际：0xC030F000>>12的低10位<br>\n0xC030F000 >> 12 = 0xC030F，低10位 = 0x30F & 0x3FF = 0x30F = <strong>783</strong><br>\n<strong>页内偏移</strong>：取第11~0位 = 0xC030F000 & 0xFFF = 0x000 = 0", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述分段与分页内存管理方案的异同，并从碎片、地址格式、程序员视角、硬件支持四个维度进行对比分析。", "options": [], "answer": "", "knowledge_point": "分段与分页对比", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>相同点</strong>：都是非连续内存分配方式，都需要硬件（MMU）支持地址翻译，都通过表结构（段表/页表）建立逻辑地址到物理地址的映射，进程切换时表结构也随之切换。<br>\n<br>\n<strong>四维度对比</strong>：<br>\n1. <strong>碎片</strong>：分段产生外部碎片（段大小可变，内存中会留下不连续的小空闲区），无内部碎片；分页消除外部碎片（页框大小固定，所有空闲页框等价），但存在内部碎片（最后一页通常未填满）。<br>\n2. <strong>地址格式</strong>：分段地址为二维（段号:偏移），段内偏移长度不固定；分页地址为一维（逻辑连续），硬件将高位作页号、低位作偏移，偏移长度固定（由页大小决定）。<br>\n3. <strong>程序员视角</strong>：分段符合程序员思维（代码段、数据段、栈段等各具含义），便于保护和共享；分页对程序员透明，程序员感知不到页的存在，不符合自然思维方式。<br>\n4. <strong>硬件支持</strong>：分段需要段表寄存器（GDTR/LDTR）和越界检查硬件；分页需要页表寄存器（如x86的CR3）和TLB；分页更适合自动化硬件实现。<br>\n<br>\n<strong>结论</strong>：现代操作系统（如x86 Linux）采用段页结合，用段满足程序员的逻辑需求，用页实现高效的内存管理，兼顾两者优点。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "某分页系统主存容量64K，页面大小1K，某作业有4页（第0~3页），分别被分配到内存的第2、4、6、7块。请将逻辑地址1023、2500、4500分别转换为物理地址，并解释转换过程。", "options": [], "answer": "", "knowledge_point": "分页地址计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n页面大小1K=1024B，页号=逻辑地址÷1024的商，页内偏移=逻辑地址÷1024的余数。<br>\n页表：页0-->块2，页1-->块4，页2-->块6，页3-->块7<br>\n<br>\n<strong>(1) 逻辑地址 1023</strong>：<br>\n页号 = 1023÷1024 = 0（余1023）<br>\n页0对应物理块2，物理地址 = 2×1024+1023 = 2048+1023 = <strong>3071</strong><br>\n<br>\n<strong>(2) 逻辑地址 2500</strong>：<br>\n页号 = 2500÷1024 = 2（余452）<br>\n页2对应物理块6，物理地址 = 6×1024+452 = 6144+452 = <strong>6596</strong><br>\n<br>\n<strong>(3) 逻辑地址 4500</strong>：<br>\n页号 = 4500÷1024 = 4（余404）<br>\n该作业只有4页（页号0~3），页号4超出页表范围，<strong>触发缺页/地址越界错误</strong>，不存在对应的物理地址。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "详细描述Intel x86保护模式下的段页式地址翻译完整过程，包括从逻辑地址到物理地址的每一步骤，并说明TLB在其中的作用。", "options": [], "answer": "", "knowledge_point": "段页式地址翻译", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>完整翻译过程（11步）</strong>：<br>\n1. CPU发出逻辑地址（段选择符cs:ip + 偏移值）<br>\n2. 从段选择符中提取TI位，TI=0查GDT，TI=1查LDT<br>\n3. 通过GDTR（或LDTR）找到GDT/LDT基址<br>\n4. 用段选择符的高13位作为索引，查段描述符，得到段基址、段限长、权限属性<br>\n5. 检查越界（偏移 &lt; 段限长），检查权限（CPL &lt;= 段描述符的DPL）<br>\n6. 线性地址 = 段基址 + 偏移<br>\n7. 查TLB：用线性地址的页号部分关联查找TLB<br>\n8. TLB命中：直接得到页框号 --> 物理地址（结束）<br>\n   TLB未命中：继续以下步骤<br>\n9. 从CR3寄存器取页目录基址，用线性地址的页目录索引查页目录项，得到二级页表基址<br>\n10. 用线性地址的页表索引查二级页表，得到页框号（ppn），同时检查页表项的有效位和权限位<br>\n11. 物理地址 = ppn × 页大小 + 页内偏移；将该页表项装入TLB<br>\n<br>\n<strong>TLB的作用</strong>：步骤7~8中TLB缓存了最近的（线性页号-->物理页框号）映射，TLB命中时跳过步骤9~10的两次内存访问，使得n级页表的访存开销降低到接近1次内存访问，极大提升了性能。由于程序局部性，TLB命中率通常超过95%。<br>\n<br>\n<strong>进程切换</strong>：更新CR3（新进程页目录基址），刷新TLB（或通过ASID识别），上下文中恢复段选择寄存器。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某32位操作系统采用两级页表管理内存，页面大小为4KB，逻辑地址格式为[页目录号(10位)|页号(10位)|页内偏移(12位)]。系统有一个进程，其内存使用情况如下：\n- 代码段：逻辑地址 0x00000000 ~ 0x00003FFF（共16KB）\n- 数据段：逻辑地址 0x00400000 ~ 0x00401FFF（共8KB）\n- 栈段：逻辑地址 0x7FFFF000 ~ 0x7FFFFFFF（共4KB）\n\n请回答以下问题：\n(1) 该进程总共需要多少个物理页框来存储代码段、数据段、栈段的内容？（不考虑页表本身）\n(2) 需要分配多少个页表页（二级页表）？一级页目录占多少字节？\n(3) 如果TLB为全空，访问逻辑地址 0x00001ABC 需要几次内存访问？访问后TLB中会缓存哪条记录？\n(4) 紧接着访问逻辑地址 0x00002000，需要几次内存访问？为什么比第(3)问少？", "options": [], "answer": "", "knowledge_point": "两级页表综合计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>(1) 所需物理页框数</strong>：<br>\n- 代码段：16KB ÷ 4KB = 4个页框<br>\n- 数据段：8KB ÷ 4KB = 2个页框<br>\n- 栈段：4KB ÷ 4KB = 1个页框<br>\n共需 <strong>7个物理页框</strong>（存储进程实际数据）<br>\n<br>\n<strong>(2) 页表页和页目录大小</strong>：<br>\n分析各段所在页目录：<br>\n- 代码段 0x00000000~0x00003FFF：页目录号=0，页号0~3，需1个二级页表<br>\n- 数据段 0x00400000~0x00401FFF：页目录号=1，页号0~1，需1个二级页表<br>\n- 栈段 0x7FFFF000：页目录号=0x1FF=511，页号=0x3FF=1023，需1个二级页表<br>\n共需 <strong>3个二级页表页</strong>（每个4KB）<br>\n一级页目录：固定 1024 项 × 4字节 = <strong>4KB = 4096字节</strong>（常驻内存）<br>\n<br>\n<strong>(3) TLB全空时访问 0x00001ABC</strong>：<br>\n地址分解：0x00001ABC = 0000000000 | 0000000001 | 101010111100<br>\n页目录号=0，页号=1，偏移=0xABC<br>\n访存序列：<br>\n① 读页目录（CR3指向），得到页目录号0对应的二级页表基址（1次内存访问）<br>\n② 读二级页表，查页号1的页表项，得到页框号（1次内存访问）<br>\n③ 读物理地址0x{页框号}ABC处的数据（1次内存访问）<br>\n共 <strong>3次内存访问</strong><br>\nTLB中缓存的记录：<strong>（页号1 --> 页框号X）</strong>（页目录号0下，逻辑页号1对应的物理页框）<br>\n<br>\n<strong>(4) 紧接着访问 0x00002000</strong>：<br>\n地址分解：0x00002000 = 页目录号0，页号2，偏移0x000<br>\n页号2与刚才的页号1在<strong>同一个二级页表</strong>中（页目录号都是0）。<br>\n但页号2与页号1不同，TLB中缓存的是页号1，<strong>TLB未命中</strong>，仍需3次访存。<br>\n注：若第(3)问访问的是同一页（如再次访问页号1内的另一地址），TLB命中则只需1次访存。本题中两次访问页号不同，所以同样需要3次。<br>\n<em>（补充说明：题目设计意图是体现局部性——若访问同一页内不同字节，TLB命中只需1次访存；本题两次访问在不同页，所以TLB对第二次无帮助。）</em>", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

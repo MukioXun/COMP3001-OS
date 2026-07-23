@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作系统复习 · 资料总览</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --paper: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #555;
+    --ink-3: #888;
+    --line: #e5e3dc;
+    --accent: #b8341c;
+    --accent-soft: #fbeae5;
+    --gold: #b8860b;
+    --blue: #1e4d6b;
+    --green: #2e6b3e;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  header { text-align: center; margin-bottom: 8px; }
+  header h1 {
+    font-size: 30px; margin: 0 0 8px; letter-spacing: 1px;
+    color: var(--ink);
+  }
+  header .sub { color: var(--ink-3); font-size: 14px; }
+  .rule {
+    width: 56px; height: 3px; background: var(--accent);
+    margin: 18px auto 44px; border-radius: 2px;
+  }
+
+  section { margin-bottom: 48px; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 12px;
+    border-bottom: 2px solid var(--line); padding-bottom: 10px; margin-bottom: 22px;
+  }
+  .sec-head h2 { font-size: 20px; margin: 0; color: var(--accent); }
+  .sec-head .desc { color: var(--ink-3); font-size: 13px; }
+
+  /* Cheat sheet hero card */
+  .hero {
+    display: block; text-decoration: none; color: inherit;
+    background: linear-gradient(135deg, #fff8f6, #fff);
+    border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 10px; padding: 22px 26px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .hero:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184,52,28,.12); }
+  .hero .t { font-size: 18px; font-weight: 600; }
+  .hero .d { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+  .hero .go { float: right; color: var(--accent); font-size: 22px; }
+
+  /* Chapter grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .chap {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;
+    transition: box-shadow .15s ease;
+  }
+  .chap:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  .chap .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 7px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px;
+  }
+  .chap .title { font-weight: 600; font-size: 15px; }
+  .chap .top { display: flex; align-items: center; gap: 10px; }
+  .chap .links { display: flex; gap: 8px; }
+  .chap .links a {
+    flex: 1; text-align: center; text-decoration: none;
+    font-size: 13px; padding: 7px 0; border-radius: 7px;
+    border: 1px solid var(--line); color: var(--ink-2);
+    transition: all .12s ease;
+  }
+  .chap .links a.kl:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .chap .links a.ct:hover { background: #eef4ef; color: var(--green); border-color: var(--green); }
+
+  /* Homework list */
+  .hw { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .hw .item {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+    padding: 14px 16px;
+  }
+  .hw .item .name { font-weight: 600; margin-bottom: 8px; }
+  .hw .item .row { display: flex; gap: 8px; }
+  .hw .item a {
+    flex: 1; text-align: center; text-decoration: none; font-size: 13px;
+    padding: 7px 0; border-radius: 7px; border: 1px solid var(--line); color: var(--ink-2);
+    transition: all .12s ease;
+  }
+  .hw .item a.q:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .hw .item a.a:hover { background: #eef3f7; color: var(--blue); border-color: var(--blue); }
+  .hw .item a.dim { color: var(--ink-3); pointer-events: none; opacity: .5; }
+
+  footer { text-align: center; color: var(--ink-3); font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>操作系统复习 · 资料总览</h1>
+    <div class="sub">速查表 · 知识清单 · 章节测试 · 课后作业</div>
+  </header>
+  <div class="rule"></div>
+
+  <!-- 速查表 -->
+  <section>
+    <div class="sec-head"><h2>速查表</h2><span class="desc">一页纵览全书核心考点</span></div>
+    <a class="hero" href="操作系统复习速查表.html">
+      <span class="go">→</span>
+      <div class="t">操作系统复习速查表</div>
+      <div class="d">公式、概念、算法对照，考前快速过一遍</div>
+    </a>
+  </section>
+
+  <!-- 章节资料 -->
+  <section>
+    <div class="sec-head"><h2>章节资料</h2><span class="desc">每章「知识清单」与「章节测试」</span></div>
+    <div class="grid" id="chapters"></div>
+  </section>
+
+  <!-- 课后作业 -->
+  <section>
+    <div class="sec-head"><h2>课后作业</h2><span class="desc">题目与参考答案</span></div>
+    <div class="hw" id="homework"></div>
+  </section>
+
+  <footer>本地资料整合 · 点击卡片在新标签打开</footer>
+</div>
+
+<script>
+  const chapters = [
+    ["01", "导论"],
+    ["02", "进程与线程"],
+    ["03", "并发与同步"],
+    ["04", "死锁"],
+    ["05", "CPU调度"],
+    ["06", "内存管理"],
+    ["07", "虚拟内存"],
+    ["08", "IO与存储"],
+    ["09", "文件系统"],
+  ];
+  const enc = encodeURI;
+  document.getElementById("chapters").innerHTML = chapters.map(([n, t]) => `
+    <div class="chap">
+      <div class="top"><span class="num">${n}</span><span class="title">${t}</span></div>
+      <div class="links">
+        <a class="kl" target="_blank" href="${enc(`Knowledge List/${n}-${t}-知识清单.html`)}">知识清单</a>
+        <a class="ct" target="_blank" href="${enc(`Chapter Test/${n}-${t}-章节测试.html`)}">章节测试</a>
+      </div>
+    </div>`).join("");
+
+  const homework = [
+    ["第一次作业", "第一次作业.docx", "answer/第一次作业答案.docx"],
+    ["第二次作业", "第二次作业.docx", "answer/第二次作业答案.docx"],
+    ["第三次作业", "第三次作业.pdf", "answer/第三次作业答案.docx"],
+    ["第四次作业", "第四次作业.pdf", "answer/第四次作业 -答案.docx"],
+  ];
+  document.getElementById("homework").innerHTML = homework.map(([name, q, a]) => `
+    <div class="item">
+      <div class="name">${name}</div>
+      <div class="row">
+        <a class="q" target="_blank" href="${enc(`../../assignments/2026_AISZ-23-CS-Reviews/${q}`)}">题目</a>
+        <a class="a" target="_blank" href="${enc(`../../assignments/2026_AISZ-23-CS-Reviews/${a}`)}">答案</a>
+      </div>
+    </div>`).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第九章：文件系统</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第九章：文件系统</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "在UNIX文件系统中，inode中不包含以下哪项信息？", "options": ["文件大小", "文件名", "文件权限", "数据块地址"], "answer": 1, "knowledge_point": "EXT2 inode结构", "diagnosis_hint": "常误以为inode包含文件名", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：inode中存储文件元数据（大小、权限、时间戳）和数据块地址（i_block[]），但<strong>不包含文件名</strong>。文件名存储在目录项（ext2_dir_entry）中，这是EXT2文件系统的独特性，支持硬链接（多个文件名指向同一inode）。", "pitfall": "FAT目录项包含文件名；EXT2目录项只有文件名+inode号，完整元数据在inode里"}, {"type": "choice", "points": 2, "question": "某EXT2文件系统块大小为1KB，每个块号占4字节。若单个文件通过三级间接索引能访问的最大数据量是？", "options": ["64MB", "16GB", "256MB", "4TB"], "answer": 1, "knowledge_point": "EXT2多级索引计算", "diagnosis_hint": "混淆三级间接索引与全部索引之和", "explanation": "<strong>正确答案</strong>：B（16GB）<br><br><strong>推理过程</strong>：1KB块，4B块号，每块可存256条索引。三级间接块寻址 = 256 × 256 × 256 × 1KB = 16,777,216 KB = 16GB。注意题目问的是「通过三级间接索引能访问」的数据量，即三级间接索引一项的能力。", "pitfall": "整个文件系统最大文件 = 12+256+64M+16G，要区分「三级间接的能力」与「总最大文件大小」"}, {"type": "choice", "points": 2, "question": "FAT16文件系统限制单个文件最大4GB，根本原因是？", "options": ["FAT表项只有2字节，最多表示65535个簇", "FAT16规定簇大小最大64KB", "A和B共同限制", "磁盘分区最大4GB"], "answer": 2, "knowledge_point": "FAT文件系统", "diagnosis_hint": "只考虑簇数量，忽略簇大小", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：FAT16表项2字节，最多2^16 = 64K个簇；规定簇大小最大64KB；因此单文件最大 = 64K × 64KB = 4GB。两个因素共同决定。", "pitfall": "FAT32用4字节表项，但限定用2^28个簇，配合簇大小仍有单文件4GB限制（文件大小字段32位）"}, {"type": "choice", "points": 2, "question": "EXT2文件系统中，关于块组（Block Group）描述正确的是？", "options": ["每个块组大小由格式化时的块大小决定，256GB磁盘约分2048个块组", "超级块只存在于块组0中，其他块组不备份", "inode数量在运行时可以动态增加", "目录文件的数据块存放子文件/目录的完整FCB"], "answer": 0, "knowledge_point": "EXT2磁盘组织", "diagnosis_hint": "超级块备份位置、inode数量是否可变", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：4KB位图块可标记32K个数据块，每个块组128MB，256GB约分2048个块组 -- 正确。超级块在多个块组中冗余备份（B错）。inode数量格式化时固定（C错）。目录数据块存放 <文件名, inode号> 映射，不是完整FCB（D错）。", "pitfall": "超级块只需把块组0的超级块读入内存，其他块组的超级块作备份"}, {"type": "choice", "points": 2, "question": "关于文件的链式存储与索引存储，下列说法正确的是？", "options": ["链式存储支持随机访问，效率高", "索引存储是连续存储和链式存储的有效折衷", "连续存储不存在碎片问题", "链式存储的FCB中记录索引块块号"], "answer": 1, "knowledge_point": "盘块三种分配方式", "diagnosis_hint": "混淆各方式特点", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：索引存储既支持直接访问（像连续存储），又无需预先连续分配（像链式存储），是二者的折衷（B正确）。链式存储只能顺序访问（A错）。连续存储有外部碎片（C错）。链式存储FCB中存放第一块块号，不是索引块号（D错）。", "pitfall": "FAT文件系统是「显式链接」——将链表集中存放为FAT表，本质仍是链式存储"}, {"type": "choice", "points": 2, "question": "UNIX路径解析 /my/data/a 需要读取磁盘的最少次数是（每次读取一个数据块，inode和数据块分别计一次，根目录inode已在内存中）？", "options": ["3次", "5次", "6次", "8次"], "answer": 2, "knowledge_point": "路径解析", "diagnosis_hint": "忽略读inode的磁盘访问", "explanation": "<strong>正确答案</strong>：C（6次）<br><br><strong>推理过程</strong>：根目录inode已在内存，读根目录数据块(1) --> 得到my的inode号，读my的inode(2) --> 读my的数据块(3) --> 得到data的inode号，读data的inode(4) --> 读data的数据块(5) --> 得到文件a的inode号，读a的inode(6)。共6次。", "pitfall": "inode和数据块是分开的两次磁盘访问；根目录inode在内存不计"}, {"type": "choice", "points": 2, "question": "EXT4 Extent机制相对于EXT2多级索引的主要优势是？", "options": ["支持更大的单文件大小", "将连续物理块记录为一条区段，减少元数据空间和间接块访问次数", "使用链式结构，消除了碎片", "每个文件只需一个inode"], "answer": 1, "knowledge_point": "EXT4 Extent优化", "diagnosis_hint": "混淆Extent的作用", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：Extent用&lt;起始块号+连续块数&gt;描述连续物理块，大文件不需要大量间接块，显著减少元数据开销和磁盘I/O次数。它并不改变单文件最大大小（A错），不是链式结构（C错），每个文件仍是一个inode（D错）。", "pitfall": "Extent使用B+树索引组织，不是链表"}, {"type": "choice", "points": 2, "question": "关于文件系统日志（Journal），下列说法正确的是？", "options": ["Journal机制使文件系统写性能提升", "Undo型Journal在系统崩溃后能恢复到崩溃前状态", "LFS和Journal本质上是相同的技术", "Journal只保护文件数据，不保护元数据"], "answer": 1, "knowledge_point": "文件系统日志", "diagnosis_hint": "混淆Journal、LFS的目的", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：Undo型Journal通过在写数据前先记录日志，崩溃时检查未提交的COMMIT，对未完成操作UNDO回滚，恢复到崩溃前一致状态（B正确）。Journal额外的写操作会降低性能（A错）。LFS是顺序写日志型文件系统，与Journal保护机制不同（C错）。Journal主要保护元数据一致性（D错）。", "pitfall": "Journal主要目标是一致性/崩溃恢复，不是性能提升；LFS的目标是提升随机写性能"}, {"type": "choice", "points": 2, "question": "关于EXT2空闲盘块管理，下列说法正确的是？", "options": ["空闲位图法每位对应一个inode", "空闲链表法分配单个空闲盘块时效率低", "EXT2使用位图法，4KB位图块可标记32K个数据块", "空闲位图法无法快速分配连续块组"], "answer": 2, "knowledge_point": "空闲盘块管理", "diagnosis_hint": "混淆位图法和链表法的特点", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：4KB = 4096B = 32768 bit，每位对应一个数据块，可标记32K个数据块，128MB/块组（C正确）。空闲位图每位对应数据块，另有inode位图（A错）。空闲链表分配单个块是高效的（B错）。位图法可以快速找到连续空闲块组（D错）。", "pitfall": "inode位图和数据块位图是两套独立的位图"}, {"type": "choice", "points": 2, "question": "RAID5+中，校验块（P块）分散在各个磁盘的目的是？", "options": ["提高数据读取速度", "节约磁盘空间", "避免所有写操作都需更新同一磁盘上的校验块，防止该磁盘成为瓶颈", "便于计算XOR校验"], "answer": 2, "knowledge_point": "RAID容错", "diagnosis_hint": "只记结论不理解原因", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：若所有校验块都在同一个磁盘上，每次写入任何数据块时都必须更新该磁盘上的校验块，该磁盘会成为所有写操作的瓶颈（拥塞）。校验块分散后，写操作分散到不同磁盘，消除瓶颈。", "pitfall": "RAID5的校验块分散是为了均衡写负载，不是为了速度或空间"}, {"type": "tf", "points": 1, "question": "在EXT2文件系统中，同一目录下的两个不同文件名可以指向同一个inode，这种机制称为硬链接。", "options": [], "answer": true, "knowledge_point": "EXT2 inode与硬链接", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：EXT2目录项只包含&lt;文件名, inode号&gt;的映射，不包含完整FCB。因此多个文件名可以映射到同一个inode，即硬链接。这是EXT2名实分离设计的直接结果。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "FAT文件系统的目录项是一个完整的文件控制块（FCB），包含文件名、大小、时间戳和起始簇号等所有信息。", "options": [], "answer": true, "knowledge_point": "FAT目录项", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：FAT32目录项固定32字节，包含文件名（8.3格式或长文件名扩展）、属性字节、时间戳、起始簇号、文件大小，是一个自包含的完整FCB，与EXT2目录项（仅文件名+inode号）不同。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "EXT2索引节点（inode）的数量在文件系统格式化后可以动态增加，以适应文件数量的增长。", "options": [], "answer": false, "knowledge_point": "EXT2 inode", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：EXT2中inode的数量和大小在格式化时就已固定（inode位图块大小确定）。因此每个块组的最大文件数受限于格式化时设定的inode数量，不能动态增加。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "文件系统中，目录的本质是一种特殊文件，其数据块中存放的是子文件/目录的<文件名, FCB指针>映射表，而不是完整的FCB。", "options": [], "answer": true, "knowledge_point": "目录实现", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：目录文件的数据块存放目录项，每个目录项包含&lt;文件名, inode号/FCB指针&gt;，不存放完整FCB，原因是路径解析频繁，存完整FCB会使目录过大影响效率。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "RAID1（磁盘镜像）的磁盘利用率为100%，因为两块磁盘存放相同数据。", "options": [], "answer": false, "knowledge_point": "RAID容错", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：RAID1每次写两个磁盘（A和B），B是A的镜像备份。存储相同数据意味着有效存储容量是两块磁盘容量的50%，而非100%，磁盘利用率为50%。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在EXT4文件系统中，延迟块分配机制会将磁盘块分配推迟到数据写入磁盘时，这可能降低文件碎片化程度。", "options": [], "answer": true, "knowledge_point": "EXT4性能优化", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：延迟块分配在数据真正要写入磁盘时才分配磁盘块，此时文件系统有更多信息（文件最终大小），可以为连续数据分配连续磁盘块，减少碎片。此外也避免了为文件临时内容分配磁盘块。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "文件系统中的空闲链表法（Free List），在一次性分配大量连续空闲盘块时效率较高。", "options": [], "answer": false, "knowledge_point": "空闲盘块管理", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：空闲链表法分配一个或少量空闲盘块时效率高（只需取链表头），但分配大量连续块时需遍历链表寻找连续空闲区，效率低。位图法更适合分配连续块组。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "FAT2是FAT1的备份，若文件系统驱动程序（FSD）无法正常访问FAT1，会自动转向访问FAT2。", "options": [], "answer": true, "knowledge_point": "FAT文件系统", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：FAT文件分配表对卷非常关键，损坏会导致整卷无法访问。FAT2是FAT1的镜像备份，当FSD无法正常访问FAT1时，会自动访问FAT2作为恢复手段。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "Undo型Journal文件系统在崩溃恢复时，能将文件系统恢复到崩溃发生后的最终状态（即让所有未完成写入完成）。", "options": [], "answer": false, "knowledge_point": "文件系统日志", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：Undo型Journal恢复到的是崩溃<strong>前</strong>的一致状态，而非崩溃后的最终状态。对未提交（无COMMIT标记）的操作执行UNDO，相当于「假装那次写操作没有发生」，保证一致性，但不保证「操作已完成」。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在EXT2文件系统的路径解析中，根目录（/）的inode号为2，这是由文件系统规范固定的。", "options": [], "answer": true, "knowledge_point": "EXT2路径解析", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：UNIX/EXT2规范规定根目录/的inode号固定为2（0和1保留）。OS在初始化时从磁盘固定位置读取根目录的FCB，这使得路径解析有确定的起点。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述EXT2文件系统中inode的作用，并说明inode为何不包含文件名。", "options": [], "answer": "", "knowledge_point": "EXT2 inode结构", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>inode（索引节点）是EXT2中每个文件的唯一描述符，包含：<br>（1）文件元数据：大小、权限（r/w/x）、所有者uid/gid、时间戳（创建/修改/访问时间）；<br>（2）数据块地址：i_block[]数组，前12项直接索引，第13~15项分别为一~三级间接索引，指向文件实际数据块。<br>inode不包含文件名的原因：EXT2采用「名实分离」设计，文件名存在目录项（ext2_dir_entry）中，目录项只保存&lt;文件名, inode号&gt;映射。好处是：（1）支持硬链接——多个文件名可指向同一inode，引用计数管理；（2）目录项小，路径解析效率高；（3）重命名只需修改目录项，不需修改inode，开销小。", "pitfall": ""}, {"type": "short", "points": 6, "question": "FAT文件系统通过文件分配表（FAT）如何定位文件 \\\\aa\\\\bb\\\\ccc.dat 的全部数据？请描述访问过程（以FAT32为例）。", "options": [], "answer": "", "knowledge_point": "FAT文件系统", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>（1）读取根目录区，遍历根目录项，找到目录名=「aa」的目录项，从中获得aa目录的首簇号（如首簇号=2）；<br>（2）查FAT表以2为起点的簇链，读取各簇内容（aa目录的数据块），在其中找到目录名=「bb」的目录项，获得bb的首簇号（如=7）；<br>（3）查FAT表以7为起点的簇链，读取bb目录数据块，找到文件名=「ccc.dat」的目录项，获得ccc.dat的首簇号（如=4）；<br>（4）查FAT表以4为起点的簇链，依次读取各簇的数据，即得到文件ccc.dat的完整内容。<br><strong>核心</strong>：FAT表实现显式链接，每次读目录都需要沿FAT簇链遍历，最终定位文件数据。", "pitfall": ""}, {"type": "short", "points": 6, "question": "比较EXT2位图法（Bitmap）和空闲链表法（Free List）在空闲盘块管理上的优缺点。", "options": [], "answer": "", "knowledge_point": "空闲盘块管理", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>位图法（Bitmap）</strong>：每一位对应一个盘块，0=空闲，1=占用。<br>优点：可以快速找到并分配一组连续的空闲盘块（位运算），适合顺序访问；位图信息紧凑，易于实现。<br>缺点：对于大容量磁盘，位图可能很大（例如1GB/1KB块大小 = 128KB位图），可能无法完全放入内存。<br><strong>空闲链表法（Free List）</strong>：将所有空闲盘块用指针链接成链表。<br>优点：不占额外空间（利用空闲块本身存放指针）；分配一个或少量空闲盘块效率很高（取链表头即可）。<br>缺点：分配多个连续盘块时需遍历链表，效率低；不支持快速查找连续空闲区。<br><strong>实际选择</strong>：EXT2采用位图法，因为大多数文件操作每次申请的空闲块数量不多，且需要尽量在同一块组内连续分配以减少碎片。", "pitfall": ""}, {"type": "short", "points": 6, "question": "什么是文件系统的Journal机制？为什么需要它？简述Undo型Journal的工作原理。", "options": [], "answer": "", "knowledge_point": "文件系统日志", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>必要性</strong>：文件系统的写操作（如更新inode+更新目录项+更新位图）通常由多步磁盘写入构成，若在中途断电或崩溃，可能导致部分更新完成、部分未完成，文件系统进入不一致状态（如inode已更新但目录项未更新，导致文件无法访问）。<br><strong>Journal机制</strong>：写数据前先将操作记录写到日志区（Journal），再写到真实位置，写完后在日志中提交COMMIT标记，保证操作的原子性。<br><strong>Undo型Journal工作原理</strong>：<br>（1）正常写流程：先写Journal DATA（记录原始数据和修改意图） --> 写磁盘真实位置 --> 提交COMMIT；<br>（2）崩溃恢复时：扫描日志区，若发现无COMMIT标记的事务（说明写操作未完成），对这些操作执行UNDO（还原到写前状态），从而将文件系统恢复到上一个一致状态。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述EXT2文件系统中多级索引（组合索引）的设计思想及其对大文件和小文件访问效率的影响，并说明EXT4如何通过Extent机制改进。", "options": [], "answer": "", "knowledge_point": "EXT2多级索引 EXT4 Extent", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>EXT2组合索引设计思想</strong>：inode中i_block[]数组兼顾空间利用和访问效率：前12项直接索引（无额外磁盘访问），对小文件极高效；第13~15项分别为1/2/3级间接索引，支持中大型文件，以多一次磁盘访问换取更大的寻址能力。这种设计「小文件快速，大文件可达」，符合大多数系统以小文件为主的特点。<br><strong>访问效率分析</strong>：小文件（12KB以内）：1次inode读取即可定位数据块，高效。大文件：需要额外1~3次磁盘访问读取间接索引块，开销与文件大小对数增长。极大文件（如GB级）：需要大量间接块，元数据开销显著，间接块本身也占用磁盘空间。<br><strong>EXT4 Extent改进</strong>：Extent用一条记录&lt;起始物理块号, 连续块数&gt;描述一段连续物理块。对于顺序写入的大文件，可能只需少量Extent就能描述全部数据，相比三级间接索引大幅减少了元数据磁盘访问。Extent使用B+树组织：节点对应一个存储块，树宽而矮（减少I/O层数），叶子节点按逻辑块号有序（支持高效范围查询），查找目标逻辑块时进行二分查找，效率高。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述FAT文件系统和EXT2文件系统在文件组织方式上的根本区别，包括：目录项结构、空闲空间管理、文件分配方式三个方面。", "options": [], "answer": "", "knowledge_point": "FAT vs EXT2", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>1. 目录项结构</strong>：FAT目录项（32字节）是完整FCB，包含文件名、属性、时间戳、起始簇号、文件大小，文件元数据自包含，强耦合（删除目录项 = 删除文件），不支持硬链接。EXT2目录项只含&lt;文件名, inode号&gt;，文件元数据全在inode中，名实分离，弱耦合，支持硬链接（多个名字指向同一inode，引用计数管理）。<br><strong>2. 空闲空间管理</strong>：FAT文件系统通过FAT表中值为0x0000的表项标识空闲簇，在整个分区范围内搜索。EXT2使用每块组独立的数据块位图和inode位图，分配时优先在同一块组内分配，减少磁盘寻道，局部性更好。<br><strong>3. 文件分配方式</strong>：FAT采用显式链表（FAT表集中存放簇链），随机访问需要遍历FAT表（O(n)）。EXT2采用多级索引（或EXT4的B+树Extent），支持直接随机访问（O(1)对小文件），对大文件也只需O(log n)的间接访问。此外，EXT2在块组内分配，FAT在全分区内分配，EXT2的局部性更好，磁头移动更少。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "某文件系统的最大容量为16TB，以磁盘块为基本分配单位，磁盘块大小为4KB，文件控制块包含一个1024B的索引表区。\n（1）假设索引表区仅采用直接索引结构，索引表项中块号最少占多少字节？可支持的单个文件最大长度是多少字节？\n（2）假设索引表区采用混合结构：前8字节采用起始块号5B+块数3B格式预分配连续空间；剩余1016字节采用直接索引，每个索引项8B。可支持的单个文件最大长度是多少字节？", "options": [], "answer": "", "knowledge_point": "文件系统计算题", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>（1）直接索引</strong>：总块数 = 16TB / 4KB = 16×2^40 / 2^12 = 2^32 个块。块号需要表示2^32个值，需要32位 = 4字节。索引表区1024B，每项4B，共256个索引项，每项对应一个4KB块。单个文件最大长度 = 256 × 4KB = 1MB = 1,048,576字节。<br><strong>（2）混合结构</strong>：预分配连续空间部分：起始块号5B（最大块号2^40），块数3B（最多2^24块），连续空间最大 = 2^24 × 4KB = 2^24 × 2^12 = 2^36 B = 64GB。直接索引部分：1016B / 8B = 127个索引项，对应127 × 4KB = 508KB。单个文件最大长度 = 64GB + 508KB ≈ 64GB + 508KB = 68,720,246,784字节。<br><strong>优化分析</strong>：由于最大块号只需2^32（4B足够），起始块号可减为4B，将多余1B给块数（4B块数 = 最多2^32个连续块 = 2^32×4KB = 16TB，等于整个分区）。这样可最大化预分配的连续空间。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某EXT2文件系统，磁盘总容量256GB，块大小4KB，每个inode固定128B。格式化参数：每块组128MB，inode与数据块比例为1:4（每4个数据块对应1个inode）。\n\n（1）该磁盘共有多少个块组？每块组有多少个数据块（不含管理区，近似估计）？每块组有多少个inode？inode表需要多少个存储块？\n\n（2）某1MB文件，块大小4KB，inode已在内存，采用EXT2组合索引（12直接+1一级+1二级+1三级间接，块号4B，每块256条索引）。读完整个文件需要多少次磁盘访问？\n\n（3）同样的1MB文件改为FAT32，簇大小4KB，FAT表已完整读入内存。顺序读完整个文件需要多少次磁盘访问？两种文件系统在随机访问性能上有何差异？", "options": [], "answer": "", "knowledge_point": "EXT2文件系统综合计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>（1）块组和inode计算</strong>：总块数 = 256GB / 4KB = 64M个块。块组数 = 256GB / 128MB = 2048个块组。每块组数据块近似 = 128MB / 4KB = 32768个块（忽略管理区）。inode与数据块1:4，每块组inode数 = 32768 / 4 = 8192个inode。inode表大小 = 8192 × 128B = 1MB = 256个4KB块，即inode表占256个存储块。<br><strong>（2）EXT2读取1MB文件的磁盘访问次数</strong>：1MB文件 = 1024KB / 4KB = 256个数据块，inode已在内存。前12个数据块通过直接索引访问，读12次磁盘。剩余256-12 = 244个块通过一级间接索引访问：先读一级间接索引块（1次），再读244个数据块（244次），共245次。总访问次数 = 12 + 1 + 244 = 257次磁盘访问。<br><strong>（3）FAT32访问差异</strong>：FAT表已在内存，访问1MB文件 = 256个簇，直接读256次磁盘访问（每次读一个数据簇），共256次，略少于EXT2（257次）。<br><strong>随机访问性能差异</strong>：EXT2支持真正的O(1)随机访问——通过inode的i_block[]直接计算目标逻辑块对应的物理块号，无需遍历链表；FAT32随机访问需要在FAT表（已在内存）中遍历簇链到达目标位置，O(n)时间复杂度，但FAT表在内存中遍历速度较快。EXT2在块组内分配，局部性好，磁头移动少；FAT在全分区分配，碎片可能导致磁头大范围移动。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

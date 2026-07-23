@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作系统复习速查表</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --paper: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #555;
+    --ink-3: #888;
+    --line: #e5e3dc;
+    --accent: #b8341c;
+    --accent-soft: #fbeae5;
+    --gold: #b8860b;
+    --blue: #1e4d6b;
+    --code-bg: #f3f1ea;
+    --calc-bg: #fff8e7;
+    --calc-border: #d4a017;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 14px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: 1280px;
+    margin: 0 auto;
+    gap: 0;
+  }
+  /* Sidebar */
+  aside {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    padding: 24px 16px;
+    background: var(--paper);
+    font-size: 13px;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  /* Collapsed sidebar */
+  .layout.collapsed {
+    grid-template-columns: 48px 1fr;
+  }
+  .layout.collapsed aside {
+    padding: 24px 6px;
+    overflow: hidden;
+  }
+  .layout.collapsed aside h1,
+  .layout.collapsed aside .subtitle,
+  .layout.collapsed aside nav,
+  .layout.collapsed aside .legend {
+    display: none;
+  }
+  .toggle-sidebar {
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .toggle-sidebar:hover { background: var(--code-bg); color: var(--accent); }
+  .layout.collapsed .toggle-sidebar {
+    right: 12px;
+    left: 12px;
+    margin: 0 auto;
+  }
+  aside h1 {
+    font-size: 16px;
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  aside .subtitle {
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+  aside nav a {
+    display: block;
+    padding: 6px 8px;
+    color: var(--ink-2);
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    transition: all 0.15s;
+  }
+  aside nav a:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  aside nav a.active {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 500;
+  }
+  aside nav a.active .num {
+    color: var(--accent-soft);
+  }
+  aside nav .num {
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  aside .legend {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  aside .legend div { margin-bottom: 4px; }
+  /* Main */
+  main {
+    padding: 32px 40px 80px;
+    background: var(--paper);
+    min-height: 100vh;
+  }
+  .header {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .header h2 {
+    font-size: 24px;
+    margin: 0 0 6px 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header p {
+    color: var(--ink-2);
+    margin: 0;
+    font-size: 13px;
+  }
+  .how-to {
+    background: var(--code-bg);
+    padding: 12px 16px;
+    border-left: 3px solid var(--blue);
+    margin-bottom: 28px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .how-to b { color: var(--ink); }
+  /* Chapter */
+  section.chapter {
+    margin-bottom: 40px;
+    scroll-margin-top: 20px;
+  }
+  section.chapter > h3 {
+    font-size: 18px;
+    margin: 0 0 4px 0;
+    padding: 8px 12px;
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 600;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  section.chapter > h3 .chnum {
+    font-size: 12px;
+    color: var(--accent-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Knowledge table */
+  table.kt {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px 0;
+    font-size: 13px;
+  }
+  table.kt th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  table.kt td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.kt tr:hover { background: var(--code-bg); }
+  table.kt .imp {
+    width: 50px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .stars-3 { color: var(--accent); font-weight: 700; }
+  .stars-2 { color: var(--gold); }
+  .stars-1 { color: var(--ink-3); }
+  table.kt .topic { width: 28%; font-weight: 500; }
+  table.kt .gist { color: var(--ink-2); }
+  table.kt .links { width: 110px; white-space: nowrap; }
+  /* Links */
+  a.jump {
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    margin-right: 4px;
+    display: inline-block;
+    background: var(--paper);
+    transition: all 0.15s;
+  }
+  a.jump:hover {
+    background: var(--blue);
+    color: var(--paper);
+    border-color: var(--blue);
+  }
+  a.jump.calc {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  a.jump.calc:hover {
+    background: var(--accent);
+    color: var(--paper);
+  }
+  /* Detail boxes */
+  .detail {
+    margin: 18px 0;
+    scroll-margin-top: 20px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px 18px;
+    background: var(--paper);
+  }
+  .detail h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .detail h4::before {
+    content: "§";
+    color: var(--ink-3);
+    font-weight: normal;
+  }
+  .detail.calc {
+    background: var(--calc-bg);
+    border-left: 4px solid var(--calc-border);
+  }
+  .detail.calc h4 {
+    color: var(--accent);
+  }
+  .detail.calc h4::before { content: "∑"; }
+  .detail p { margin: 6px 0; }
+  .detail ul { margin: 6px 0; padding-left: 20px; }
+  .detail li { margin: 3px 0; }
+  code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 10px 14px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 8px 0;
+    border-left: 3px solid var(--ink-3);
+  }
+  pre code { background: none; padding: 0; }
+  .back-top {
+    font-size: 11px;
+    color: var(--ink-3);
+    text-decoration: none;
+    float: right;
+    margin-top: 4px;
+  }
+  .back-top:hover { color: var(--accent); }
+  /* Formula box */
+  .formula {
+    background: var(--paper);
+    border: 1px dashed var(--ink-3);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+  }
+  .key { color: var(--accent); font-weight: 600; }
+  /* Pitfall */
+  .pitfall {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 12.5px;
+  }
+  .pitfall::before {
+    content: "⚠ ";
+    color: var(--accent);
+    font-weight: bold;
+  }
+  /* Cheatsheet */
+  .cheatsheet {
+    background: #1a1a1a;
+    color: #e5e3dc;
+    padding: 24px 28px;
+    border-radius: 4px;
+    margin-top: 40px;
+  }
+  .cheatsheet h3 {
+    color: var(--paper);
+    margin: 0 0 16px 0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+  }
+  .cheatsheet .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .cheatsheet h5 {
+    margin: 0 0 6px 0;
+    color: var(--gold);
+    font-size: 13px;
+  }
+  .cheatsheet code {
+    background: #2a2a2a;
+    color: #e5e3dc;
+    font-size: 11.5px;
+  }
+  .cheatsheet ul { padding-left: 18px; margin: 0; font-size: 12.5px; }
+  /* Quick filter */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+  .filter-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    cursor: pointer;
+    background: var(--paper);
+    color: var(--ink-2);
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .filter-btn:hover:not(.active) { background: var(--code-bg); }
+  .hidden { display: none !important; }
+  /* Exam analysis special styles */
+  .exam-hero {
+    background: linear-gradient(135deg, #2d1810 0%, #4a1c10 100%);
+    color: #f5e6d3;
+    padding: 24px 28px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .exam-hero h3 {
+    margin: 0 0 8px 0;
+    color: #fff;
+    font-size: 20px;
+  }
+  .exam-hero p {
+    margin: 4px 0;
+    color: #d4b89c;
+    font-size: 13px;
+  }
+  .freq-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .freq-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .freq-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .freq-table .y { color: #2d6a4f; font-weight: 600; }
+  .freq-table .n { color: var(--ink-3); }
+  .freq-table .must {
+    background: var(--accent);
+    color: var(--paper);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .freq-table .high {
+    background: var(--gold);
+    color: var(--paper);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .big5 {
+    border: 2px solid var(--accent);
+    border-radius: 6px;
+    margin: 24px 0;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .big5-header {
+    background: var(--accent);
+    color: var(--paper);
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .big5-header h4 {
+    margin: 0;
+    color: var(--paper);
+    font-size: 16px;
+  }
+  .big5-header h4::before { content: none; }
+  .big5-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .big5-body {
+    padding: 16px 20px;
+  }
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  .steps li {
+    counter-increment: step;
+    margin: 10px 0;
+    padding: 10px 14px 10px 44px;
+    background: var(--code-bg);
+    border-radius: 4px;
+    position: relative;
+    font-size: 13px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    color: var(--paper);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .worked {
+    background: var(--calc-bg);
+    border-left: 4px solid var(--calc-border);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .worked b.tag {
+    background: var(--gold);
+    color: var(--paper);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  .time-alloc {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .time-block {
+    background: var(--code-bg);
+    padding: 10px 12px;
+    border-radius: 4px;
+    border-left: 3px solid var(--blue);
+    font-size: 12px;
+  }
+  .time-block b { display: block; color: var(--blue); font-size: 13px; margin-bottom: 2px; }
+  .time-block .mins { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+  /* Collapsible details */
+  details.fold {
+    margin: 10px 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+  }
+  details.fold[open] {
+    background: var(--code-bg);
+  }
+  details.fold > summary {
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    list-style: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary::before {
+    content: "▸";
+    color: var(--ink-3);
+    font-size: 10px;
+    transition: transform 0.15s;
+    display: inline-block;
+  }
+  details.fold[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  details.fold > summary:hover { color: var(--accent); }
+  details.fold > div.content {
+    padding: 4px 16px 12px 30px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  details.fold > div.content > *:first-child { margin-top: 4px; }
+  /* SVG viz */
+  .viz {
+    background: #fafaf7;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .viz svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .viz-caption {
+    text-align: center;
+    color: var(--ink-3);
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+    main { padding: 20px; }
+    .cheatsheet .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<a href="index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+<div class="layout" id="layout">
+
+<aside>
+  <button class="toggle-sidebar" id="toggleSidebar" title="收起/展开导航">≡</button>
+  <h1>操作系统复习</h1>
+  <div class="subtitle">速查表 · 8 章 · 按重要性</div>
+  <nav>
+    <a href="#ch1"><span class="num">1</span>进程与线程</a>
+    <a href="#ch1b" style="padding-left:24px;font-size:12px;"><span class="num">+</span>异常控制流</a>
+    <a href="#ch2"><span class="num">2</span>并发与同步</a>
+    <a href="#ch2b" style="padding-left:24px;font-size:12px;"><span class="num">+</span>并发编程基础</a>
+    <a href="#ch3"><span class="num">3</span>处理器调度</a>
+    <a href="#ch3b" style="padding-left:24px;font-size:12px;"><span class="num">+</span>现代处理器优化</a>
+    <a href="#ch4"><span class="num">4</span>死锁</a>
+    <a href="#ch5"><span class="num">5</span>内存管理</a>
+    <a href="#ch5b" style="padding-left:24px;font-size:12px;"><span class="num">+</span>分段与段页式</a>
+    <a href="#ch6"><span class="num">6</span>虚拟内存</a>
+    <a href="#ch7"><span class="num">7</span>I/O 系统</a>
+    <a href="#ch8"><span class="num">8</span>文件系统</a>
+    <a href="#exam" style="color:var(--accent);font-weight:600;"><span class="num" style="color:var(--accent);">!</span>真题分析专题</a>
+    <a href="#cheat"><span class="num">★</span>核心公式速查</a>
+  </nav>
+  <div class="legend">
+    <div><span class="stars-3">★★★</span> 必考核心</div>
+    <div><span class="stars-2">★★</span> 高频考点</div>
+    <div><span class="stars-1">★</span> 了解即可</div>
+    <div style="margin-top:10px;">
+      <a class="jump" href="#" style="margin:0;">概念</a>
+      <a class="jump calc" href="#" style="margin:0;">计算</a>
+    </div>
+  </div>
+</aside>
+
+<main>
+<div class="header">
+  <h2>操作系统期末复习速查表</h2>
+  <p>基于四次作业 · 知识点按重要性排序 · 点击链接跳转到详解</p>
+</div>
+
+<div class="how-to">
+  <b>使用方法：</b>左侧目录跳章节 → 每章首先是知识点总表（按 ★ 排序）→ 点击右侧 <span style="color:var(--blue)">蓝色"概念"</span> 跳转定义、<span style="color:var(--accent)">红色"计算"</span> 跳转例题套路 → 底部有公式速查 + 浏览器 <code>Ctrl+F</code> 搜任意关键词。
+</div>
+
+<div class="filter-bar">
+  <span style="color:var(--ink-3);align-self:center;">筛选：</span>
+  <button class="filter-btn active" data-filter="all">全部</button>
+  <button class="filter-btn" data-filter="3">仅 ★★★</button>
+  <button class="filter-btn" data-filter="2">★★ 及以上</button>
+  <button class="filter-btn" data-filter="calc">仅计算题</button>
+</div>
+
+<!-- ============ CH1 ============ -->
+<section class="chapter" id="ch1">
+  <h3><span class="chnum">CH 01</span>进程与线程</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">fork() 进程数与输出</td><td class="gist">调用一次返回两次；子进程复制变量；数进程画进程图</td><td class="links"><a class="jump" href="#c-fork">概念</a><a class="jump calc" href="#p-fork">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">进程三态转换</td><td class="gist">就绪↔运行↔阻塞；阻塞不能直转运行</td><td class="links"><a class="jump" href="#c-state">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">进程 vs 线程</td><td class="gist">进程是资源单位，线程是调度单位；线程共享地址空间</td><td class="links"><a class="jump" href="#c-pvt">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">PCB 进程控制块</td><td class="gist">进程存在唯一标志；存状态/寄存器/调度信息；不存代码数据本身</td><td class="links"><a class="jump" href="#c-pcb">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">线程模型</td><td class="gist">多对一：一阻全阻；一对一：可并行；多对多：折中</td><td class="links"><a class="jump" href="#c-thread">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">进程通信 IPC</td><td class="gist">管道半双工；共享内存最快；消息队列、信号量、socket</td><td class="links"><a class="jump" href="#c-ipc">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-fork">
+    <h4>fork() 系统调用 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li>调用一次，返回两次：父进程得子 PID，子进程得 0</li>
+      <li>子进程<b>复制</b>父进程的变量（写时复制），之后互不影响</li>
+      <li>子进程从 fork 返回处开始执行；子进程 PID <b>不一定</b>大于父进程</li>
+      <li>同步父子顺序：在第二个 <code>fork</code> 前加 <code>wait(NULL)</code></li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-fork">
+    <h4>计算套路：fork 进程数与输出 <a class="back-top" href="#ch1">↑</a></h4>
+    <p><b>数进程：</b>顺序执行的 n 个 fork → 最多 2ⁿ 个进程；带条件分支看进程图</p>
+    <p><b>数输出：</b>每个 printf 在每个经过它的进程中各执行一次</p>
+    <p><b>例（作业一第 11 题）：</b>两次 fork，每次只在父进程继续 → 共 3 个进程，x 输出 0、1、3（子进程退出 exit(0) 不继续）</p>
+    <p><b>例（作业一第 12 题）：</b><code>L0 fork (L1 fork (L2 Bye) Bye) Bye</code> → 4 个进程，输出含 1×L0、1×L1、1×L2、3×Bye</p>
+    <p class="pitfall">数 Bye 的次数 = 最终进程总数；不要漏掉 fork 返回后父子都执行的代码</p>
+  </div>
+
+  <div class="detail" id="c-state">
+    <h4>进程三态 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li><b>就绪→运行</b>：被调度选中</li>
+      <li><b>运行→就绪</b>：时间片用完 / 高优先级抢占</li>
+      <li><b>运行→阻塞</b>：等待 I/O 或事件</li>
+      <li><b>阻塞→就绪</b>：等待事件发生（<b>不能</b>直接到运行）</li>
+      <li><b>僵尸态</b>：子进程已退但父未 wait，PCB 未回收（非正常状态）</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-pvt">
+    <h4>进程 vs 线程 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li>进程是<b>资源分配</b>基本单位，线程是 <b>CPU 调度</b>基本单位</li>
+      <li>同一进程的线程<b>共享</b>地址空间、文件、全局变量，<b>独立</b>栈和寄存器</li>
+      <li>线程切换比进程切换快（不切地址空间）</li>
+      <li>不管有无线程，进程都是资源拥有的独立单位</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-pcb">
+    <h4>PCB 进程控制块 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li>进程存在的<b>唯一标志</b>，保存在<b>内存的系统区</b>（不在用户空间，用户进程无法直接访问）</li>
+      <li>存：PID、状态、寄存器副本、调度信息、资源清单、页表指针等</li>
+      <li><b>不存</b>代码和数据本身（只存指向它们的地址或描述符）</li>
+      <li>进程切换 = 保存当前 PCB + 恢复目标 PCB</li>
+    </ul>
+
+    <details class="fold">
+      <summary>展开：进程切换的最核心实现</summary>
+      <div class="content">
+        <p><b>上下文切换（context switch）</b>的硬件级步骤：</p>
+        <ol>
+          <li><b>保存现场</b>到当前 PCB：
+            <ul>
+              <li>通用寄存器（rax/rbx/...）</li>
+              <li>程序计数器 PC（要执行的下一条指令）</li>
+              <li>栈指针 SP（用户栈和内核栈位置）</li>
+              <li>程序状态字 PSW（标志位、CPU 模式）</li>
+            </ul>
+          </li>
+          <li><b>切换内存映射</b>：把页表基址寄存器（CR3）改为目标进程的页表根 → 整个地址空间被替换</li>
+          <li><b>刷新 TLB</b>（或仅刷无 PCID 标记的项）—— 因为虚拟地址含义变了</li>
+          <li><b>恢复现场</b>：从目标 PCB 加载寄存器、PC、SP、PSW</li>
+          <li>从目标 PC 处继续执行 —— 完成切换</li>
+        </ol>
+        <p><b>开销主要来自</b>：①TLB 刷新导致后续大量 cache miss；②内核态进入退出；③页表切换。这就是<b>线程切换比进程切换快</b>的根本原因 —— 线程不切页表也不刷 TLB。</p>
+        <p class="pitfall">线程切换只需保存通用寄存器+PC+SP，不切 CR3；进程切换则全套都要</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail" id="c-thread">
+    <h4>线程模型 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li><b>多对一</b>（用户级）：调度快，但一线程阻塞整进程阻塞，不能并行</li>
+      <li><b>一对一</b>（内核级）：可并行，切换开销大</li>
+      <li><b>多对多</b>：用户级线程映射到 ≤ 数量的内核线程，折中</li>
+    </ul>
+
+    <details class="fold">
+      <summary>展开：用户级 vs 内核级线程详细对比</summary>
+      <div class="content">
+        <table class="kt" style="margin:0;">
+          <tr><th>维度</th><th>用户级线程 ULT</th><th>内核级线程 KLT</th></tr>
+          <tr><td>调度者</td><td>用户态线程库</td><td>操作系统内核</td></tr>
+          <tr><td>切换开销</td><td>小（不进内核）</td><td>大（陷入内核）</td></tr>
+          <tr><td>多核并行</td><td>❌ 不能</td><td>✅ 能</td></tr>
+          <tr><td>阻塞影响</td><td>整进程一起阻塞</td><td>仅该线程阻塞</td></tr>
+          <tr><td>对内核透明</td><td>✓ 内核不知道</td><td>✗ 内核管理</td></tr>
+          <tr><td>典型实现</td><td>早期 Green Threads</td><td>POSIX pthread (Linux NPTL)</td></tr>
+        </table>
+        <p><b>三种映射模型：</b></p>
+        <ul>
+          <li><b>M:1（多对一）</b>：M 个用户线程 → 1 个内核线程。所有 ULT 共用一个内核调度实体；任一阻塞拖累全体</li>
+          <li><b>1:1（一对一）</b>：每 ULT 配一个 KLT。现代主流（Linux/Windows）；可真并行</li>
+          <li><b>M:N（多对多）</b>：M 个 ULT 复用 N 个 KLT（N &lt; M）。理论灵活但实现复杂，已较少使用</li>
+        </ul>
+        <p class="pitfall">"线程是 CPU 调度的基本单位"这句话默认指<b>内核级线程</b>；用户级线程实际调度单位仍是其所在进程</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail" id="c-ipc">
+    <h4>进程间通信 <a class="back-top" href="#ch1">↑</a></h4>
+    <ul>
+      <li><b>管道 pipe</b>：半双工；无名管道仅亲缘进程；有名管道可任意</li>
+      <li><b>共享内存</b>：最快，但需同步</li>
+      <li><b>消息队列</b>、<b>信号量</b>、<b>socket</b>（跨主机）</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH1b: 异常控制流 ============ -->
+<section class="chapter" id="ch1b">
+  <h3><span class="chnum">CH 1+</span>异常控制流（ECF）</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">四类异常分类</td><td class="gist">中断、陷阱、故障、终止 —— 同步/异步、是否返回</td><td class="links"><a class="jump" href="#c-ecf-types">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">异常处理机制</td><td class="gist">异常号 → 异常表 → 处理程序；用户态↔内核态切换</td><td class="links"><a class="jump" href="#c-ecf-mech">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">系统调用本质</td><td class="gist">就是陷阱（trap），是受控的内核态入口</td><td class="links"><a class="jump" href="#c-syscall">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">信号 Signal</td><td class="gist">软件层异常控制流；可被捕获、忽略、阻塞</td><td class="links"><a class="jump" href="#c-signal">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">信号接收机制</td><td class="gist">pending &amp; ~blocked；信号<b>不排队</b>，重复信号会丢失</td><td class="links"><a class="jump" href="#c-signal-mech">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">async-signal-safe</td><td class="gist">handler 不能用 printf/malloc；用 sigaction 替代 signal</td><td class="links"><a class="jump" href="#c-signal-safe">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">中断 vs 轮询</td><td class="gist">中断异步通知，CPU 可并行；轮询同步等待</td><td class="links"><a class="jump" href="#c-poll">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-ecf-types">
+    <h4>四类异常 <a class="back-top" href="#ch1b">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th>类别</th><th>原因</th><th>同步性</th><th>返回行为</th><th>例子</th></tr>
+      <tr><td><b>中断 Interrupt</b></td><td>外部硬件</td><td>异步</td><td>返回下一条</td><td>I/O 完成、时钟</td></tr>
+      <tr><td><b>陷阱 Trap</b></td><td>故意指令</td><td>同步</td><td>返回下一条</td><td>系统调用、断点</td></tr>
+      <tr><td><b>故障 Fault</b></td><td>可能恢复的错</td><td>同步</td><td>重新执行 / 终止</td><td>缺页、除零</td></tr>
+      <tr><td><b>终止 Abort</b></td><td>不可恢复</td><td>同步</td><td>不返回</td><td>硬件故障</td></tr>
+    </table>
+    <p class="pitfall">缺页是 <b>故障</b>，处理完后<b>重新执行</b>原指令（这就是 TLB 题里要算两次访问的原因）</p>
+  </div>
+
+  <div class="detail" id="c-ecf-mech">
+    <h4>异常处理机制 <a class="back-top" href="#ch1b">↑</a></h4>
+    <ol>
+      <li>事件发生 → CPU 检测到异常号</li>
+      <li>查<b>异常表</b>（异常号 → 处理程序入口）</li>
+      <li>保存上下文（PC、寄存器、PSW）压栈</li>
+      <li>切换到<b>内核态</b>，执行处理程序</li>
+      <li>处理完成 → 恢复上下文 → 返回用户态</li>
+    </ol>
+    <p>异常表与中断向量表是同一类结构，按异常号索引。</p>
+  </div>
+
+  <div class="detail" id="c-syscall">
+    <h4>系统调用 <a class="back-top" href="#ch1b">↑</a></h4>
+    <ul>
+      <li>本质：一种<b>陷阱</b>，用户主动进入内核的唯一合法方式</li>
+      <li>流程：用户调库函数 → 库函数把参数和系统调用号放寄存器 → 执行 <code>syscall</code>/<code>int</code> 指令 → 进内核执行 → 返回结果</li>
+      <li>fork、read、write、open、wait 都是系统调用</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-signal">
+    <h4>信号 Signal <a class="back-top" href="#ch1b">↑</a></h4>
+    <p><b>定义</b>：内核或进程发送给目标进程的小整数消息，软件层面的异常控制流。是 IPC 的一种机制。</p>
+    <p><b>常见信号：</b></p>
+    <ul>
+      <li><code>SIGINT</code>(2) Ctrl+C 中断</li>
+      <li><code>SIGKILL</code>(9) 强杀，<b>不可捕获/忽略/阻塞</b></li>
+      <li><code>SIGSEGV</code>(11) 段错误</li>
+      <li><code>SIGALRM</code>(14) 定时器到期</li>
+      <li><code>SIGCHLD</code>(17) 子进程停止/终止</li>
+      <li><code>SIGSTOP</code> 暂停，<b>不可捕获/忽略/阻塞</b></li>
+    </ul>
+    <p><b>三种处理方式</b>：忽略 / 终止（默认）/ 捕获（自定义 handler）</p>
+    <p><b>发送方式</b>：<code>kill(pid,sig)</code>系统调用 / <code>kill -9 pid</code>命令 / 键盘快捷键 / <code>alarm(n)</code>定时</p>
+  </div>
+
+  <div class="detail" id="c-signal-mech">
+    <h4>信号接收机制：两个位向量 <a class="back-top" href="#ch1b">↑</a></h4>
+    <p>内核为每个进程维护两个位向量：</p>
+    <ul>
+      <li><b>pending（待处理）</b>：信号到达置 1，处理后清零</li>
+      <li><b>blocked（阻塞）</b>：进程主动屏蔽的信号集合</li>
+    </ul>
+    <div class="formula">实际处理的信号 = pending &amp; ~blocked</div>
+    <p><b>检查时机</b>：进程从内核态切回用户态时</p>
+    <p><b>阻塞方式：</b></p>
+    <ul>
+      <li><b>隐式</b>：执行某信号 handler 时，内核自动阻塞同类信号</li>
+      <li><b>显式</b>：用 <code>sigprocmask(SIG_BLOCK/UNBLOCK/SETMASK, ...)</code></li>
+    </ul>
+    <p class="pitfall"><b>信号不排队！</b>同类信号多次到达时，pending 位向量只记录"有一个待处理"，多余信号被丢弃</p>
+  </div>
+
+  <div class="detail" id="c-signal-safe">
+    <h4>安全的信号处理（async-signal-safe） <a class="back-top" href="#ch1b">↑</a></h4>
+    <p>handler 与主程序<b>并发</b>运行，必须遵守五条准则：</p>
+    <ul>
+      <li><b>G1 简单处理</b>：handler 尽量只设置标志位</li>
+      <li><b>G2 仅用 async-signal-safe 函数</b>：<code>write()</code> 安全；<code>printf/malloc/exit</code> <b>不安全</b></li>
+      <li><b>G3 保存/恢复 errno</b>：handler 开始保存、结束恢复</li>
+      <li><b>G4 访问共享数据前阻塞所有信号</b>：防竞争条件</li>
+      <li><b>G5 全局变量加 volatile</b>：防编译器缓存到寄存器；标志位用 <code>sig_atomic_t</code> 类型</li>
+    </ul>
+    <p class="pitfall">在 handler 里调用 <code>printf/malloc</code> 是<b>经典 bug</b>：可能死锁或数据损坏（因为这些函数有内部锁/共享缓冲区）</p>
+    <p><b>可移植性</b>：用 <code>sigaction()</code> 替代 <code>signal()</code>（后者行为在不同系统不一致），配合 <code>SA_RESTART</code> 标志和 <code>sigemptyset()</code> 初始化</p>
+  </div>
+
+  <div class="detail" id="c-poll">
+    <h4>中断 vs 轮询 <a class="back-top" href="#ch1b">↑</a></h4>
+    <ul>
+      <li><b>轮询</b>：CPU 主动反复查状态，浪费 CPU；适合高频事件</li>
+      <li><b>中断</b>：设备就绪时主动通知 CPU，CPU 可并行其他工作；适合低频事件</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH2 ============ -->
+<section class="chapter" id="ch2">
+  <h3><span class="chnum">CH 02</span>并发与同步</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">PV 操作设计同步</td><td class="gist">每条等待关系→一个初值 0 的信号量；共享变量必须 mutex 保护</td><td class="links"><a class="jump" href="#c-sem">概念</a><a class="jump calc" href="#p-sync">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">信号量含义</td><td class="gist">S&gt;0 可用资源数；S&lt;0 |S| 等待进程数；初值=资源数</td><td class="links"><a class="jump" href="#c-sem-val">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">互斥 vs 同步</td><td class="gist">互斥：P/V 在同一进程；同步：P/V 在不同进程</td><td class="links"><a class="jump" href="#c-mut-syn">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">前驱图 → 信号量</td><td class="gist">每条边一个信号量；前驱末尾 V，后继开头 P；多前驱连续 P</td><td class="links"><a class="jump calc" href="#p-pred">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">复杂同步题套路</td><td class="gist">状态变量+mutex+多个条件信号量；持锁不能 P 阻塞信号量</td><td class="links"><a class="jump" href="#c-complex">概念</a><a class="jump calc" href="#p-complex">计算</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">临界区与临界资源</td><td class="gist">临界区是访问临界资源的代码段</td><td class="links"><a class="jump" href="#c-cs">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-sem">
+    <h4>信号量本质 <a class="back-top" href="#ch2">↑</a></h4>
+    <p>信号量 S = 带等待队列的整数。</p>
+    <ul>
+      <li><b>P(S)</b>：S--；若 S&lt;0，进程阻塞入队</li>
+      <li><b>V(S)</b>：S++；若 S≤0，唤醒一个等待进程</li>
+      <li>三种用途：互斥（初值 1）、同步（初值 0）、资源池（初值 n）</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-sem-val">
+    <h4>信号量值的物理含义 <a class="back-top" href="#ch2">↑</a></h4>
+    <ul>
+      <li><b>S &gt; 0</b>：表示剩余可用资源数</li>
+      <li><b>S = 0</b>：资源恰好用完，无等待</li>
+      <li><b>S &lt; 0</b>：|S| 表示当前等待该资源的进程数</li>
+    </ul>
+    <p><b>例：</b>初值 5，当前值 -2 → 资源已用完，2 个进程在等</p>
+    <p><b>例：</b>初值 3，当前 -1 → 1 个进程在等</p>
+    <p><b>例：</b>3 进程共享、最多 2 个并发 → 初值 2，范围 [2, -1]</p>
+  </div>
+
+  <div class="detail" id="c-mut-syn">
+    <h4>互斥 vs 同步判别 <a class="back-top" href="#ch2">↑</a></h4>
+    <ul>
+      <li><b>互斥</b>：P 和 V 在<b>同一</b>进程中，包住临界区；初值通常 1</li>
+      <li><b>同步</b>：P 和 V 在<b>不同</b>进程中（交叉）；初值通常 0</li>
+      <li>判别：写完后看每个信号量，如果 P/V 总成对出现在同一进程 → 互斥用；否则 → 同步用</li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-sync">
+    <h4>计算套路：设计 PV 同步 <a class="back-top" href="#ch2">↑</a></h4>
+    <p><b>四步法：</b></p>
+    <ol>
+      <li>识别"事件 / 等待关系" → 每条 → 一个初值 0 的同步信号量</li>
+      <li>识别"互斥访问的共享变量" → mutex = 1</li>
+      <li>识别"有限资源" → 信号量初值 = 资源数</li>
+      <li>写代码：临界区用 P(mutex)…V(mutex) 包；同步事件 V 在前驱末尾、P 在后继开头</li>
+    </ol>
+    <p class="pitfall">永远不要"持有 mutex 时去 P 一个可能阻塞的信号量" → 死锁</p>
+  </div>
+
+  <div class="detail calc" id="p-pred">
+    <h4>计算例题：前驱图同步（作业一第 9 题） <a class="back-top" href="#ch2">↑</a></h4>
+    <p>C 必须在 A、B 之后；E 必须在 C、D 之后。</p>
+    <p><b>信号量：</b><code>sem_A=sem_B=sem_C=sem_D=0</code></p>
+<pre><code>A: { A(); V(sem_A); }
+B: { B(); V(sem_B); }
+C: { P(sem_A); P(sem_B); C(); V(sem_C); }
+D: { D(); V(sem_D); }
+E: { P(sem_C); P(sem_D); E(); }</code></pre>
+    <p><b>规则：</b>每条依赖边 → 一个信号量；后继操作开头连续 P 所有前驱信号量</p>
+  </div>
+
+  <div class="detail" id="c-complex">
+    <h4>复杂同步题结构 <a class="back-top" href="#ch2">↑</a></h4>
+    <p>多状态、多队列题（如录像厅、理发店）的统一模板：</p>
+<pre><code>// 共享状态变量（多个）
+mutex = 1              // 保护所有状态变量
+条件信号量1 = 0        // 等待事件1
+条件信号量2 = 0        // 等待事件2
+
+进入逻辑:
+  P(mutex)
+    if (能立即进) { 改状态; V(mutex); }
+    else {
+      登记等待数;
+      V(mutex);          ← 必须先释放 mutex
+      P(条件信号量);     ← 再去等
+    }
+
+退出逻辑:
+  P(mutex)
+    改状态;
+    if (我是最后一个) {
+      批量 V 唤醒等待者;
+    }
+  V(mutex)</code></pre>
+  </div>
+
+  <div class="detail calc" id="p-complex">
+    <h4>计算例题：录像厅同步（作业一第 10 题） <a class="back-top" href="#ch2">↑</a></h4>
+    <p><b>关键设计：</b></p>
+    <ul>
+      <li><code>current</code>（当前类型）+ <code>count</code>（人数）+ <code>waiting_X</code>（各类等待数）—— 共享变量，全部用 mutex 保护</li>
+      <li>三个等待信号量 <code>theater_A/B/C = 0</code></li>
+      <li>进入时若类型匹配立即进；否则登记+释放 mutex+P 等待</li>
+      <li>退出时若是最后一个 → 切换 current → 批量 V 唤醒新类型的等待者</li>
+    </ul>
+    <p class="pitfall">最后一个观众负责"切场"。批量唤醒数 = waiting 数，唤醒后清零计数</p>
+  </div>
+
+  <div class="detail" id="c-cs">
+    <h4>临界区 / 临界资源 <a class="back-top" href="#ch2">↑</a></h4>
+    <ul>
+      <li><b>临界资源</b>：一次只能被一个进程使用的资源</li>
+      <li><b>临界区</b>：进程中访问临界资源的<b>那段代码</b></li>
+      <li>四原则：空闲让进、忙则等待、有限等待、让权等待</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH2b: 并发编程基础 ============ -->
+<section class="chapter" id="ch2b">
+  <h3><span class="chnum">CH 2+</span>并发编程基础</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">线程内存模型</td><td class="gist">全局/local-auto/local-static 的共享差异</td><td class="links"><a class="jump" href="#c-tmem">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">竞争条件 Race</td><td class="gist">cnt++ 拆成 L/U/S 三步，交错执行致更新丢失</td><td class="links"><a class="jump" href="#c-race">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">临界区四原则</td><td class="gist">空闲让进、忙则等待、有限等待、让权等待</td><td class="links"><a class="jump" href="#c-4principles">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">读者-写者问题</td><td class="gist">读优先/写优先；用 readcnt 和 mutex 嵌套</td><td class="links"><a class="jump calc" href="#p-readwrite">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">哲学家就餐</td><td class="gist">死锁三种解法：限人数、原子取双、奇偶序号</td><td class="links"><a class="jump calc" href="#p-philo">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">线程安全函数</td><td class="gist">四类非线程安全；可重入函数概念</td><td class="links"><a class="jump" href="#c-tsafe">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">互斥的硬件支持</td><td class="gist">TSL、CAS 原子指令；关中断</td><td class="links"><a class="jump" href="#c-hw">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-tmem">
+    <h4>线程内存模型 <a class="back-top" href="#ch2b">↑</a></h4>
+    <p>同进程的所有线程共享地址空间，但变量是否真共享要看声明位置：</p>
+    <table class="kt" style="margin:0;">
+      <tr><th>变量类别</th><th>实例数</th><th>是否共享</th><th>位置</th></tr>
+      <tr><td>全局变量</td><td>1 个</td><td><b>所有线程共享</b></td><td>数据段</td></tr>
+      <tr><td>局部 auto</td><td>每线程 1 个</td><td>各自独立</td><td>各线程的栈</td></tr>
+      <tr><td>局部 static</td><td>1 个</td><td><b>所有线程共享</b></td><td>数据段</td></tr>
+    </table>
+    <p class="pitfall">局部 auto 在线程私有栈上，但<b>把栈地址传给其他线程</b>就被共享了（危险！） — 这是典型的"栈逃逸"bug</p>
+  </div>
+
+  <div class="detail" id="c-race">
+    <h4>竞争条件 Race Condition <a class="back-top" href="#ch2b">↑</a></h4>
+    <p><b>典型例子</b>：两线程各做 <code>cnt++</code> 1000 次，期望 2000，实际可能少很多。</p>
+    <p><code>cnt++</code> 不是原子的，对应三条汇编：</p>
+<pre><code>L (Load):   cnt → 寄存器
+U (Update): 寄存器 + 1
+S (Store):  寄存器 → cnt</code></pre>
+    <p>两线程的 L/U/S 交错执行时<b>更新丢失</b>：</p>
+<pre><code>线程A: L(读cnt=5)        U(=6)        S(写6)
+线程B:           L(也读到5)  U(=6)         S(写6)
+结果：cnt = 6（应该是 7）</code></pre>
+    <p><b>消除方法</b>：原子操作 / 锁 / 信号量</p>
+  </div>
+
+  <div class="detail" id="c-4principles">
+    <h4>临界区四原则 <a class="back-top" href="#ch2b">↑</a></h4>
+    <ol>
+      <li><b>空闲让进</b>：临界区空时，允许一进程立即进入</li>
+      <li><b>忙则等待</b>：临界区有进程时，其他必须等</li>
+      <li><b>有限等待</b>：等待时间有上限（防饥饿）</li>
+      <li><b>让权等待</b>：不能进入时应放弃 CPU，<b>不能忙等</b></li>
+    </ol>
+    <p>违反"让权等待"的算法（如自旋锁）只适合短临界区。</p>
+  </div>
+
+  <div class="detail calc" id="p-readwrite">
+    <h4>读者-写者问题（必背模板） <a class="back-top" href="#ch2b">↑</a></h4>
+    <p><b>第一类（读者优先）</b>：只要有读者在读，新读者直接进 → 写者可能饥饿</p>
+<pre><code>int readcnt = 0;
+semaphore mutex = 1;   // 保护 readcnt
+semaphore w = 1;       // 写者互斥锁
+
+Reader:                          Writer:
+P(mutex);                        P(w);
+  readcnt++;                     写;
+  if (readcnt == 1) P(w); // 第一个读者抢锁
+V(mutex);                        V(w);
+读;
+P(mutex);
+  readcnt--;
+  if (readcnt == 0) V(w); // 最后一个读者释放
+V(mutex);</code></pre>
+    <p><b>第二类（写者优先）</b>：写者在等时不允许新读者进入 → 加一个 <code>readMutex</code>，写者持有它阻挡新读者</p>
+    <p class="pitfall">读优先 → 写者饥饿；写优先 → 读者饥饿；公平方案需用队列</p>
+  </div>
+
+  <div class="detail calc" id="p-philo">
+    <h4>哲学家就餐问题（三种解法） <a class="back-top" href="#ch2b">↑</a></h4>
+    <p>5 哲学家围坐，每人需<b>左右两根筷子</b>才能吃。错误方案：所有人同时拿左筷 → 全等右筷 → <b>死锁</b>（四条件全满足）</p>
+    <p><b>解法 1：限制人数</b></p>
+<pre><code>semaphore sm = 4;   // 最多 4 人同时尝试
+
+Philosopher i:
+P(sm);
+  P(chopstick[i]);
+  P(chopstick[(i+1)%5]);
+  吃;
+  V(chopstick[i]); V(chopstick[(i+1)%5]);
+V(sm);
+// 至少有一人能吃饭，破坏"循环等待"</code></pre>
+    <p><b>解法 2：原子取双</b>—— 用 mutex 包住两次 P，只有两筷都可用才拿</p>
+    <p><b>解法 3：奇偶序号</b>—— 奇数号先左后右，偶数号先右后左，打破循环等待</p>
+  </div>
+
+  <div class="detail" id="c-tsafe">
+    <h4>线程安全 <a class="back-top" href="#ch2b">↑</a></h4>
+    <p><b>四类非线程安全函数：</b></p>
+    <ol>
+      <li>不保护共享变量的函数（如 badcnt）</li>
+      <li>调用间保持状态的函数（如 <code>rand()</code> 用静态种子）</li>
+      <li>返回指向静态变量指针的函数（如 <code>ctime()</code>、<code>gethostbyname()</code>）</li>
+      <li>调用非线程安全函数的函数</li>
+    </ol>
+    <p><b>可重入函数</b>：不引用任何共享数据；是线程安全的子集</p>
+    <p><b>解决方案</b>：用 <code>_r</code> 后缀的可重入版本（如 <code>ctime_r</code>）；或自己加锁</p>
+  </div>
+
+  <div class="detail" id="c-hw">
+    <h4>互斥的硬件实现 <a class="back-top" href="#ch2b">↑</a></h4>
+    <ul>
+      <li><b>关中断</b>：单 CPU 简单方案；多 CPU 失效</li>
+      <li><b>TSL (Test-and-Set Lock)</b>：原子读+写指令
+<pre style="margin:4px 0;"><code>while (TSL(&amp;lock) == 1) ;  // 自旋
+// 临界区
+lock = 0;</code></pre>
+      </li>
+      <li><b>CAS (Compare-And-Swap)</b>：现代 CPU 必备，无锁数据结构基础</li>
+    </ul>
+    <p>这些是<b>忙等</b>方案，违反"让权等待"，仅用于极短临界区。</p>
+  </div>
+</section>
+
+<!-- ============ CH3 ============ -->
+<section class="chapter" id="ch3">
+  <h3><span class="chnum">CH 03</span>处理器调度</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">甘特图 + 周转时间</td><td class="gist">画图算完成时间 → 周转 = 完成 − 到达</td><td class="links"><a class="jump calc" href="#p-gantt">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">三个关键公式</td><td class="gist">周转、带权周转、响应比</td><td class="links"><a class="jump" href="#c-formula">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">SJF 抢占式 (SRTN)</td><td class="gist">新作业到达时比较剩余时间，短者运行</td><td class="links"><a class="jump calc" href="#p-srtn">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">高响应比 HRRN</td><td class="gist">每次调度时动态算响应比，最高者运行</td><td class="links"><a class="jump calc" href="#p-hrrn">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">算法饥饿性</td><td class="gist">SJF、优先级会饥饿；FCFS、RR、HRRN 不会</td><td class="links"><a class="jump" href="#c-algos">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">多道 CPU+I/O 调度</td><td class="gist">作业 I/O 时 CPU 让给其他作业，最大化并行</td><td class="links"><a class="jump calc" href="#p-multi">计算</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">时间片选取</td><td class="gist">太短开销大；太长响应慢；按响应时间和进程数定</td><td class="links"><a class="jump" href="#c-rr">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-formula">
+    <h4>三个核心公式 <a class="back-top" href="#ch3">↑</a></h4>
+    <div class="formula">
+      周转时间 = 完成时间 − 到达时间<br>
+      带权周转 = 周转时间 / 服务时间<br>
+      等待时间 = 周转时间 − 服务时间&nbsp;&nbsp;<span class="key">（不是减 I/O 时间！）</span><br>
+      响应比 = (等待时间 + 服务时间) / 服务时间
+    </div>
+  </div>
+
+  <div class="detail" id="c-algos">
+    <h4>调度算法对比 <a class="back-top" href="#ch3">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th>算法</th><th>抢占</th><th>饥饿</th><th>特点</th></tr>
+      <tr><td>FCFS</td><td>否</td><td>否</td><td>公平，短作业等久</td></tr>
+      <tr><td>SJF/SRTN</td><td>可抢占</td><td><b>会</b></td><td>平均周转最短</td></tr>
+      <tr><td>优先级</td><td>可抢占</td><td><b>会</b></td><td>实时系统</td></tr>
+      <tr><td>RR</td><td>是</td><td>否</td><td>分时</td></tr>
+      <tr><td>HRRN</td><td>否</td><td>否</td><td>兼顾短作业与等待</td></tr>
+      <tr><td>多级反馈</td><td>是</td><td>否</td><td>通用</td></tr>
+    </table>
+
+    <details class="fold">
+      <summary>展开：每个算法的设计动机</summary>
+      <div class="content">
+        <p><b>FCFS（先来先服务）</b> — 最朴素直觉，按到达排队
+        <br>缺点：一个长作业卡住所有短作业（"护航效应"）
+        <br>适用：批处理、追求公平的系统</p>
+
+        <p><b>SJF / SRTN（短作业/最短剩余时间优先）</b> — 想最小化平均周转，让快的先走
+        <br>设计依据：可证明 SJF 平均周转最短
+        <br>缺点：① 需预知服务时间（实际只能估）；② 长作业可能饥饿
+        <br>抢占式（SRTN）：新到达的若剩余时间更短就抢占</p>
+
+        <p><b>优先级调度</b> — 体现作业重要性差异
+        <br>静态优先级：创建时确定不变；动态优先级：随等待时间增加（防饥饿）
+        <br>缺点：高优持续到达 → 低优饥饿；解决 = <b>老化 aging</b></p>
+
+        <p><b>RR 时间片轮转</b> — 让所有用户体验"同时在用"
+        <br>设计：每进程分配时间片 q，到期就轮换
+        <br>q 太小：切换开销大；q 太大：退化为 FCFS
+        <br>经验值：q ≈ 进程切换时间的 10–100 倍</p>
+
+        <p><b>HRRN 高响应比</b> — 想兼顾"短作业优先"和"等久了就该跑"
+        <br>响应比 = (等待+服务)/服务 → 等得越久响应比越高，自动防饥饿
+        <br>服务时间越短响应比基数越高，短作业仍有优势</p>
+
+        <p><b>多级反馈队列 MLFQ</b> — 不需预知服务时间，自动识别交互/批处理
+        <br>设计：多个队列，优先级递减；新作业入最高级；时间片用完降一级；I/O 多的留高级
+        <br>结果：交互短作业自然留高级（快响应）；CPU 密集型沉到低级（不影响他人）
+        <br>现代 OS（Linux CFS 之前的 O(1) 调度器）均基于此变种</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail calc" id="p-gantt">
+    <h4>计算套路：甘特图 + 周转时间 <a class="back-top" href="#ch3">↑</a></h4>
+    <ol>
+      <li>列时间轴，按算法选当前运行进程</li>
+      <li>每次"事件"（新到达、运行完、时间片到）时重新决策</li>
+      <li>记录每个进程的完成时间</li>
+      <li>周转 = 完成 − 到达；平均周转 = 总和/进程数</li>
+    </ol>
+  </div>
+
+  <div class="detail calc" id="p-srtn">
+    <h4>计算例题：SJF 抢占式 <a class="back-top" href="#ch3">↑</a></h4>
+    <p>每个新作业到达时点都要对比：当前运行进程的<b>剩余</b>时间 vs 新作业的服务时间，短者运行。</p>
+    <p>作业二第 2 题：P1(0,7), P2(2,4), P3(4,1), P4(5,4) → 时间轴:</p>
+    <p><code>P1[0-2] → P2[2-4] → P3[4-5] → P2[5-7] → P4[7-11] → P1[11-16]</code></p>
+    <p>P2 完成时间 = 7，周转 = 7-2 = <b>5</b></p>
+  </div>
+
+  <div class="detail calc" id="p-hrrn">
+    <h4>计算例题：高响应比（作业二第 9 题） <a class="back-top" href="#ch3">↑</a></h4>
+    <p>每次空闲调度时，给所有等待作业算响应比 = (等待+服务)/服务，选最高的。</p>
+    <p>J1(8:00,2h), J2(8:30,40m), J3(9:00,25m), J4(9:30,30m)</p>
+    <ul>
+      <li>10:00 时 J1 结束，J2 等 90m、J3 等 60m、J4 等 30m → 响应比 3.25/3.4/2 → 选 <b>J3</b></li>
+      <li>10:25 J3 结束 → 重算 → 选 <b>J2</b></li>
+      <li>11:05 J2 结束 → 仅剩 <b>J4</b></li>
+    </ul>
+    <p>执行顺序：<b>J1 → J3 → J2 → J4</b></p>
+    <p class="pitfall">响应比是<b>动态</b>算的，每次调度都重算，不能算一次定终身</p>
+  </div>
+
+  <div class="detail calc" id="p-multi">
+    <h4>计算例题：多道 CPU+I/O 调度（作业二第 7、8 题） <a class="back-top" href="#ch3">↑</a></h4>
+    <p><b>思路：</b>P1 进 I/O 时让 P2 用 CPU，最大化重叠。</p>
+    <p><b>作业二第 7 题：</b>P1=计算60+IO80+计算20=160；P2=计算120+IO40+计算40=200；P2 晚 5ms 到</p>
+    <p>P1 0-60 计算，P2 等；P1 60-140 IO 同时 P2 60-180 计算；继续重叠… → 最少 <b>260ms</b></p>
+    <p><b>CPU 利用率</b> = CPU 忙时间 / 总时间（作业二第 8 题 = 21/32 = 65.7%）</p>
+  </div>
+
+  <div class="detail" id="c-rr">
+    <h4>时间片轮转 <a class="back-top" href="#ch3">↑</a></h4>
+    <ul>
+      <li>时间片太短 → 切换频繁，开销大</li>
+      <li>时间片太长 → 退化为 FCFS，响应慢</li>
+      <li>根据系统响应时间要求和进程数综合确定</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH3b: 现代处理器优化 ============ -->
+<section class="chapter" id="ch3b">
+  <h3><span class="chnum">CH 3+</span>现代处理器与代码优化</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">流水线 Pipeline</td><td class="gist">取指/译码/执行/访存/写回；CPI 接近 1；冒险拖慢</td><td class="links"><a class="jump" href="#c-pipe">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">缓存与局部性</td><td class="gist">时间局部性 + 空间局部性；L1/L2/L3 层次</td><td class="links"><a class="jump" href="#c-cache">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">分支预测</td><td class="gist">预测错则流水线清空；写代码减少难预测分支</td><td class="links"><a class="jump" href="#c-branch">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">代码优化方法</td><td class="gist">循环展开、强度削弱、消除冗余、改善局部性</td><td class="links"><a class="jump" href="#c-opt">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">缓存友好代码</td><td class="gist">行主序遍历二维数组；步长 1 最快</td><td class="links"><a class="jump" href="#c-cache-friendly">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">乱序执行 / 超标量</td><td class="gist">CPU 动态调度多条指令并行</td><td class="links"><a class="jump" href="#c-ooo">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-pipe">
+    <h4>流水线 Pipeline <a class="back-top" href="#ch3b">↑</a></h4>
+    <p><b>核心思想</b>：一条指令分成多个阶段，多条指令并行处于不同阶段。</p>
+    <p>经典 5 段：<b>IF</b>(取指) → <b>ID</b>(译码) → <b>EX</b>(执行) → <b>MEM</b>(访存) → <b>WB</b>(写回)</p>
+    <p><b>三种冒险（pipeline hazard）</b>会拖慢流水线：</p>
+    <ul>
+      <li><b>结构冒险</b>：硬件资源冲突（如同时访存）</li>
+      <li><b>数据冒险</b>：后一条依赖前一条结果</li>
+      <li><b>控制冒险</b>：分支指令导致 PC 不确定</li>
+    </ul>
+    <p>理想 CPI = 1；有冒险时 CPI &gt; 1</p>
+
+    <details class="fold">
+      <summary>展开：数据冒险的三种缓解</summary>
+      <div class="content">
+        <p><b>1. 流水线停顿 stall / bubble</b>（最朴素）：插入空指令等前面写回完成。简单但浪费周期。</p>
+        <p><b>2. 转发 / 旁路 forwarding</b>（主流）：</p>
+        <ul>
+          <li>前一条算出结果不必等到 WB 写回，从 EX/MEM 阶段直接送回给下一条的 EX 输入</li>
+          <li>需要硬件多加几条旁路线</li>
+          <li>消除大多数 RAW（写后读）冒险</li>
+        </ul>
+<pre><code>无 forwarding：
+  ADD R1=R2+R3  IF ID EX MEM WB
+  SUB R4=R1-R5     IF ID -- -- ID EX ...  (等3周期)
+
+有 forwarding：
+  ADD R1=R2+R3  IF ID EX MEM WB
+  SUB R4=R1-R5     IF ID EX MEM WB        (无停顿)
+                       ↑ R1从上条EX输出直接转发</code></pre>
+        <p><b>3. 加载-使用冒险</b>（load-use）：load 指令在 MEM 阶段才拿到数据，下一条紧跟使用仍需 stall 1 周期；编译器可<b>指令调度</b>把无关指令插入中间消除停顿。</p>
+        <p><b>4. 寄存器重命名</b>（高级 CPU）：把虚拟寄存器映射到物理寄存器池，消除 WAR/WAW 假相关。</p>
+      </div>
+    </details>
+
+    <details class="fold">
+      <summary>展开：结构冒险的缓解</summary>
+      <div class="content">
+        <p><b>方法</b>：</p>
+        <ul>
+          <li><b>分离指令和数据缓存</b>（哈佛架构）：IF 和 MEM 可同周期不冲突</li>
+          <li><b>多端口寄存器堆</b>：允许同周期读写</li>
+          <li><b>功能单元复制</b>：多个 ALU 等</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail" id="c-cache">
+    <h4>缓存与局部性 <a class="back-top" href="#ch3b">↑</a></h4>
+    <p><b>层次结构（典型）：</b></p>
+    <div class="formula">
+      寄存器 ← L1 (≈1 cycle) ← L2 (≈10) ← L3 (≈40) ← 主存 (≈200) ← 磁盘 (10⁶)
+    </div>
+    <p><b>局部性原理</b>（虚拟内存和缓存共同的基础）：</p>
+    <ul>
+      <li><b>时间局部性</b>：刚访问的数据短期内可能再访问 → 缓存留住它</li>
+      <li><b>空间局部性</b>：访问某地址时，附近地址也可能被访问 → 整块加载</li>
+    </ul>
+    <p><b>缓存映射方式</b>：直接映射、组相联、全相联（TLB 通常全相联）</p>
+  </div>
+
+  <div class="detail" id="c-branch">
+    <h4>分支预测 <a class="back-top" href="#ch3b">↑</a></h4>
+    <p>遇到分支时 CPU 猜测走哪条路并继续取指。</p>
+    <ul>
+      <li><b>预测正确</b>：流水线无延迟</li>
+      <li><b>预测错误</b>：流水线清空，损失 10-20 cycles</li>
+    </ul>
+    <p><b>编程建议</b>：</p>
+    <ul>
+      <li>把可预测的分支（几乎总走某一支）放前面</li>
+      <li>避免数据相关的随机分支（如随机数组上的 if）</li>
+      <li>排序后再处理可大幅提速（经典："排序前后的 if 速度差异"）</li>
+    </ul>
+
+    <details class="fold">
+      <summary>展开：分支预测的硬件实现层次</summary>
+      <div class="content">
+        <p><b>1. 静态预测</b>（编译期决定）：</p>
+        <ul>
+          <li>总是预测"不跳转"：简单，准确率约 50%</li>
+          <li>向后跳转预测"跳"、向前跳转预测"不跳"：利用循环特性，准确率 70%+</li>
+        </ul>
+
+        <p><b>2. 动态预测</b>（运行时学习）：</p>
+        <ul>
+          <li><b>1 位预测器</b>：记最近一次跳没跳，循环边界容易错两次</li>
+          <li><b>2 位饱和计数器</b>（最经典）：四状态 SN/WN/WT/ST，连续两次错才改方向；准确率 ~90%</li>
+          <li><b>两级自适应</b>：用历史模式索引预测表，可学到"跳-不跳-跳-不跳"周期</li>
+          <li><b>TAGE/Perceptron</b>：现代 CPU 采用，准确率 95%+</li>
+        </ul>
+
+        <p><b>3. 配套结构</b>：</p>
+        <ul>
+          <li><b>BTB（分支目标缓冲）</b>：缓存"分支指令地址 → 目标地址"，预测"跳"时立即知道跳哪</li>
+          <li><b>RAS（返回地址栈）</b>：专门预测 ret 指令的返回地址</li>
+        </ul>
+
+        <p><b>4. 控制冒险的其他缓解</b>：</p>
+        <ul>
+          <li><b>延迟分支</b>（MIPS）：约定分支后一条指令无论如何都执行（"延迟槽"）</li>
+          <li><b>分支预测后投机执行</b>：错则清空流水线和重排序缓冲</li>
+        </ul>
+
+        <p class="pitfall">"排序后处理快很多"的实验：未排序数据 → 分支随机不可预测 → 预测器准确率约 50%；排序后 → 分支单调 → 准确率 99%；速度差 5-10 倍</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail" id="c-opt">
+    <h4>代码优化方法 <a class="back-top" href="#ch3b">↑</a></h4>
+    <ul>
+      <li><b>消除冗余</b>：循环内不变量提出来（loop-invariant motion）</li>
+      <li><b>强度削弱</b>：乘除改加减、改位移；<code>i*8</code> → <code>i&lt;&lt;3</code></li>
+      <li><b>循环展开</b>：减少分支次数，增加指令级并行机会</li>
+      <li><b>函数内联</b>：消除调用开销</li>
+      <li><b>减少内存访问</b>：用局部变量缓存常用值</li>
+      <li><b>消除别名问题</b>：用 <code>restrict</code> 等告诉编译器指针不重叠</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-cache-friendly">
+    <h4>缓存友好的代码 <a class="back-top" href="#ch3b">↑</a></h4>
+    <p><b>经典对比：</b>二维数组 <code>a[N][N]</code> 求和</p>
+<pre><code>// C 是行主序存储
+// 慢：列主序遍历，每次跨 N 个元素，缓存命中差
+for (j=0; j&lt;N; j++)
+  for (i=0; i&lt;N; i++) sum += a[i][j];
+
+// 快：行主序遍历，连续访问，每次缓存命中
+for (i=0; i&lt;N; i++)
+  for (j=0; j&lt;N; j++) sum += a[i][j];</code></pre>
+    <p><b>原则</b>：访问数据的步长越小越好；连续访问利用空间局部性；重复访问利用时间局部性。</p>
+    <p>矩阵乘法常用<b>分块（blocking/tiling）</b>来提升缓存命中。</p>
+  </div>
+
+  <div class="detail" id="c-ooo">
+    <h4>乱序执行与超标量 <a class="back-top" href="#ch3b">↑</a></h4>
+    <ul>
+      <li><b>超标量</b>：CPU 每周期取多条指令并行执行</li>
+      <li><b>乱序执行</b>：不按程序顺序，按数据就绪顺序执行</li>
+      <li>程序员看到的"顺序执行"由<b>重排序缓冲（ROB）</b>保证</li>
+      <li>影响：单线程内的"并行"也存在，但多线程同步仍需信号量/锁</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH4 ============ -->
+<section class="chapter" id="ch4">
+  <h3><span class="chnum">CH 04</span>死锁</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">银行家算法</td><td class="gist">Need=Max−Alloc；试分配 → 找安全序列</td><td class="links"><a class="jump" href="#c-banker">概念</a><a class="jump calc" href="#p-banker">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">四必要条件</td><td class="gist">互斥(不可破)、请求保持、不剥夺、循环等待</td><td class="links"><a class="jump" href="#c-cond">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">死锁判定公式</td><td class="gist">m ≥ n(k−1)+1 不会死锁</td><td class="links"><a class="jump calc" href="#p-dl-formula">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">预防/避免/检测区别</td><td class="gist">预防：破坏必要条件；避免：银行家；检测：事后</td><td class="links"><a class="jump" href="#c-strategy">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">死锁解除</td><td class="gist">剥夺资源、撤销进程、回退</td><td class="links"><a class="jump" href="#c-recover">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-cond">
+    <h4>死锁四必要条件 <a class="back-top" href="#ch4">↑</a></h4>
+    <ol>
+      <li><b>互斥</b>—— 资源本身性质，<span class="key">无法破坏</span></li>
+      <li><b>请求与保持</b>—— 破坏：一次申请所有资源</li>
+      <li><b>不剥夺</b>—— 破坏：主动释放或强制剥夺</li>
+      <li><b>循环等待</b>—— 破坏：资源有序分配</li>
+    </ol>
+  </div>
+
+  <div class="detail" id="c-strategy">
+    <h4>处理策略对比 <a class="back-top" href="#ch4">↑</a></h4>
+    <ul>
+      <li><b>预防</b>：事前破坏必要条件，能确保不死锁，资源利用率低</li>
+      <li><b>避免（银行家）</b>：分配前检查安全性，需要最大需求信息，不会给可能导致死锁的进程分配</li>
+      <li><b>检测+解除</b>：事后处理，会分配，发现死锁再解除</li>
+      <li><b>忽略（鸵鸟）</b>：现代 OS 常见</li>
+    </ul>
+    <p class="pitfall">银行家算法判断的是"安全状态"，不是"死锁状态"。死锁要用<b>检测算法</b></p>
+  </div>
+
+  <div class="detail" id="c-banker">
+    <h4>银行家算法 <a class="back-top" href="#ch4">↑</a></h4>
+    <ol>
+      <li>计算 <code>Need = Max − Allocation</code></li>
+      <li>收到 Request：检查 <code>Request ≤ Need</code> 和 <code>Request ≤ Available</code></li>
+      <li>试分配：<code>Available -= Req; Alloc += Req; Need -= Req</code></li>
+      <li>找安全序列：反复寻找 Need ≤ Available 的进程，让它完成并释放（Available += Alloc）</li>
+      <li>找到完整序列 → 安全，正式分配；否则撤销试分配</li>
+    </ol>
+  </div>
+
+  <div class="detail calc" id="p-banker">
+    <h4>计算例题：银行家算法（作业二第 7 题） <a class="back-top" href="#ch4">↑</a></h4>
+    <p>Available = (1,5,2,0)，4 进程 Allocation 与 Max 见题表。</p>
+    <p><b>(1) Need 矩阵：</b>P0(0,0,0,0)、P1(0,0,5,0)、P2(1,0,0,2)、P3(0,6,4,2)</p>
+    <p><b>(2) 找安全序列：</b></p>
+    <ul>
+      <li>P0 的 Need=(0,0,0,0) ≤ Avail → 运行，释放后 Avail=(1,5,3,2)</li>
+      <li>P2 的 Need=(1,0,0,2) ≤ Avail → 释放后 Avail=(2,8,8,6)</li>
+      <li>P1 的 Need=(0,0,5,0) ≤ Avail → 释放后 Avail=(3,8,8,6)</li>
+      <li>P3 的 Need=(0,6,4,2) ≤ Avail → 完成</li>
+    </ul>
+    <p>安全序列：<b>P0 → P2 → P1 → P3</b></p>
+    <p><b>(3) P1 请求 (0,4,2,0)：</b>检查 ≤ Need(0,0,5,0)？ —— 4 &gt; 0，<b>不满足 Need 约束</b>（题目里 Need 是 (0,0,5,0)，第二项是 0，请求 4 超过 Need，应拒绝）</p>
+  </div>
+
+  <div class="detail calc" id="p-dl-formula">
+    <h4>计算技巧：不会死锁的判定 <a class="back-top" href="#ch4">↑</a></h4>
+    <p>n 个进程，每个最多需要 k 个某类资源，资源总数 m</p>
+    <div class="formula">m ≥ n × (k − 1) + 1 → 不会死锁</div>
+    <p><b>例：</b>5 资源、6 进程每个需 1 → 6×0+1 = 1 ≤ 5 ✓ 不死锁</p>
+    <p><b>例：</b>5 资源、3 进程每个需 4 → 3×3+1 = 10 &gt; 5 ✗ 可能死锁</p>
+  </div>
+
+  <div class="detail" id="c-recover">
+    <h4>死锁解除 <a class="back-top" href="#ch4">↑</a></h4>
+    <ul>
+      <li>剥夺资源：抢走部分进程的资源给其他进程</li>
+      <li>撤销进程：终止某些进程释放资源</li>
+      <li>回退（rollback）：把进程回退到之前的检查点</li>
+    </ul>
+    <p>死锁时必然有 ≥ 2 个进程处于阻塞态。</p>
+  </div>
+</section>
+
+<!-- ============ CH5 ============ -->
+<section class="chapter" id="ch5">
+  <h3><span class="chnum">CH 05</span>内存管理</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">分页地址翻译</td><td class="gist">逻辑地址 → 页号+偏移 → 查页表 → 物理地址</td><td class="links"><a class="jump" href="#c-paging">概念</a><a class="jump calc" href="#p-trans">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">多级页表位数划分</td><td class="gist">每级页表恰好占一页；项数=页大小/项大小</td><td class="links"><a class="jump calc" href="#p-multi-pt">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">页表项地址计算</td><td class="gist">页表基址 + 页号 × 项大小</td><td class="links"><a class="jump calc" href="#p-pte-addr">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">动态分区算法</td><td class="gist">首次适应（地址递增）、最佳、最坏适应</td><td class="links"><a class="jump" href="#c-part">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">分页 vs 分段</td><td class="gist">页定长物理单位（内碎片）；段变长逻辑单位（外碎片）</td><td class="links"><a class="jump" href="#c-pseg">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">地址转换硬件</td><td class="gist">由 MMU（硬件）完成</td><td class="links"><a class="jump" href="#c-mmu">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">程序如何进入内存</td><td class="gist">编译→链接→装入；三种装入方式</td><td class="links"><a class="jump" href="#c-load">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-paging">
+    <h4>分页核心数学 <a class="back-top" href="#ch5">↑</a></h4>
+    <div class="formula">
+      页大小 = 2^k 字节 → 偏移占 k 位<br>
+      逻辑地址 m 位 → 页号占 m−k 位<br>
+      页表项数 = 2^(m−k)<br>
+      页框数 = 2^(p−k)（p = 物理地址位数）<br>
+      页表大小 = 项数 × 项字节
+    </div>
+  </div>
+
+  <div class="detail calc" id="p-trans">
+    <h4>计算套路：地址翻译四步 <a class="back-top" href="#ch5">↑</a></h4>
+    <ol>
+      <li>页号 = 逻辑地址 &gt;&gt; k</li>
+      <li>偏移 = 逻辑地址 &amp; (2^k − 1)</li>
+      <li>查页表得页框号</li>
+      <li>物理地址 = 页框号 × 页大小 + 偏移</li>
+    </ol>
+    <p><b>例（作业三第 9.3 题）：</b>页大小 4KB，逻辑 0x00008000，页号 8，装入页框 0x900</p>
+    <p>页面 2（页号 9）→ 页框号 0x901 → 物理地址 = 0x901 × 0x1000 = <b>0x00901000</b></p>
+
+    <div class="viz">
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,sans-serif">
+        <!-- Logical Address -->
+        <text x="20" y="30" font-size="13" font-weight="600" fill="#1a1a1a">逻辑地址 (Logical Address)</text>
+        <rect x="20" y="40" width="180" height="40" fill="#fff" stroke="#1e4d6b" stroke-width="2"/>
+        <line x1="120" y1="40" x2="120" y2="80" stroke="#1e4d6b" stroke-width="2"/>
+        <text x="70" y="65" text-anchor="middle" font-size="12" fill="#1e4d6b" font-weight="600">页号 p</text>
+        <text x="160" y="65" text-anchor="middle" font-size="12" fill="#b8341c" font-weight="600">偏移 d</text>
+        <text x="70" y="98" text-anchor="middle" font-size="10" fill="#888">高位</text>
+        <text x="160" y="98" text-anchor="middle" font-size="10" fill="#888">低 k 位</text>
+
+        <!-- Arrow to page table -->
+        <line x1="120" y1="80" x2="120" y2="130" stroke="#1e4d6b" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="135" y="110" font-size="11" fill="#1e4d6b">索引</text>
+
+        <!-- Page Table -->
+        <text x="20" y="150" font-size="13" font-weight="600" fill="#1a1a1a">页表 (Page Table)</text>
+        <rect x="20" y="160" width="200" height="120" fill="#fff" stroke="#888"/>
+        <text x="40" y="180" font-size="11" fill="#888">页号</text>
+        <text x="140" y="180" font-size="11" fill="#888">页表项 (PTE)</text>
+        <line x1="20" y1="186" x2="220" y2="186" stroke="#ddd"/>
+        <text x="40" y="202" font-size="11" fill="#555">0</text>
+        <rect x="80" y="190" width="130" height="16" fill="#fafaf7" stroke="#ddd"/>
+        <text x="145" y="202" text-anchor="middle" font-size="10" fill="#888">页框号 | 控制位</text>
+        <text x="40" y="222" font-size="11" fill="#555">1</text>
+        <rect x="80" y="210" width="130" height="16" fill="#fafaf7" stroke="#ddd"/>
+        <text x="40" y="242" font-size="11" fill="#555">...</text>
+        <text x="40" y="262" font-size="11" fill="#b8341c" font-weight="600">p</text>
+        <rect x="80" y="250" width="130" height="16" fill="#fbeae5" stroke="#b8341c" stroke-width="2"/>
+        <text x="145" y="262" text-anchor="middle" font-size="11" fill="#b8341c" font-weight="600">页框号 f</text>
+
+        <!-- Arrow from PTE to frame -->
+        <line x1="220" y1="258" x2="430" y2="200" stroke="#b8341c" stroke-width="2" marker-end="url(#arr-r)"/>
+        <text x="290" y="220" font-size="11" fill="#b8341c">页框号 f</text>
+
+        <!-- Arrow from offset down -->
+        <path d="M 200 60 Q 350 60 350 195 L 480 195" fill="none" stroke="#b8341c" stroke-width="2" marker-end="url(#arr-r)"/>
+        <text x="370" y="80" font-size="11" fill="#b8341c">偏移 d (透传)</text>
+
+        <!-- Physical Address -->
+        <text x="430" y="170" font-size="13" font-weight="600" fill="#1a1a1a">物理地址 (Physical Address)</text>
+        <rect x="430" y="180" width="220" height="40" fill="#fff" stroke="#2d6a4f" stroke-width="2"/>
+        <line x1="530" y1="180" x2="530" y2="220" stroke="#2d6a4f" stroke-width="2"/>
+        <text x="480" y="205" text-anchor="middle" font-size="12" fill="#2d6a4f" font-weight="600">页框号 f</text>
+        <text x="590" y="205" text-anchor="middle" font-size="12" fill="#b8341c" font-weight="600">偏移 d</text>
+
+        <!-- Physical Memory -->
+        <text x="430" y="245" font-size="13" font-weight="600" fill="#1a1a1a">物理内存</text>
+        <rect x="430" y="255" width="220" height="40" fill="#fff" stroke="#888"/>
+        <rect x="500" y="255" width="60" height="40" fill="#fbeae5" stroke="#b8341c" stroke-width="1.5"/>
+        <text x="530" y="280" text-anchor="middle" font-size="11" fill="#b8341c" font-weight="600">页框 f</text>
+        <text x="460" y="280" text-anchor="middle" font-size="10" fill="#888">f-1</text>
+        <text x="600" y="280" text-anchor="middle" font-size="10" fill="#888">f+1</text>
+
+        <!-- Arrow markers -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L0,8 L6,4 z" fill="#1e4d6b"/>
+          </marker>
+          <marker id="arr-r" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L0,8 L6,4 z" fill="#b8341c"/>
+          </marker>
+        </defs>
+      </svg>
+      <div class="viz-caption">分页地址翻译流程：页号查表 → 拿页框号 → 与偏移拼接为物理地址</div>
+    </div>
+
+    <details class="fold">
+      <summary>展开：四个核心术语区分</summary>
+      <div class="content">
+        <ul>
+          <li><b>页 (Page) / 页面 (Page)</b>：<b>逻辑</b>地址空间的定长块，是程序视角的概念，编号从 0 开始</li>
+          <li><b>页号 (Page Number, p)</b>：逻辑地址中标识"是第几页"的高位字段</li>
+          <li><b>页框 / 页帧 (Page Frame / Frame, f)</b>：<b>物理</b>内存的定长块，与页大小相同，是硬件视角概念</li>
+          <li><b>页表项 (PTE)</b>：页表中的一行，存"页号 → 页框号"的映射，还含权限位、修改位、访问位等</li>
+        </ul>
+        <p><b>简化口诀</b>：</p>
+        <ul>
+          <li>页是逻辑概念，页框是物理概念，大小相等</li>
+          <li>页号是地址里的字段，页框号是页表项里的值</li>
+          <li>PTE 是桥梁：从页号查到页框号</li>
+          <li>偏移在翻译中"透传"：逻辑偏移 = 物理偏移</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="detail calc" id="p-multi-pt">
+    <h4>计算套路：多级页表位数划分 <a class="back-top" href="#ch5">↑</a></h4>
+    <p><b>原则：</b>每级页表本身恰好占一页（这样页表也能用分页管理）</p>
+    <p><b>一页能装的项数 = 页大小 / 页表项大小</b> → 该级索引位数 = log₂(项数)</p>
+    <ul>
+      <li>32 位地址，4KB 页，4B 项 → 一页装 1024 项 = 10 位 → 划分 <b>10+10+12</b></li>
+      <li>48 位地址，4KB 页，8B 项 → 一页装 512 项 = 9 位 → 严格需要 <b>9+9+9+9+12</b>（4 级）</li>
+    </ul>
+    <p><b>表达式（作业三第 9.2 题）：</b></p>
+<pre><code>页目录号 = LA &gt;&gt; 22
+页表索引 = (LA &gt;&gt; 12) &amp; 0x3FF
+页内偏移 = LA &amp; 0xFFF</code></pre>
+  </div>
+
+  <div class="detail calc" id="p-pte-addr">
+    <h4>计算套路：页表项物理地址 <a class="back-top" href="#ch5">↑</a></h4>
+    <div class="formula">页表项物理地址 = 页表基址 + 页号 × 项大小</div>
+    <p><b>例（作业三第 9.3 题）：</b>页表基址 0x00200000，项大小 4B</p>
+    <ul>
+      <li>页号 8 的页表项 = 0x00200000 + 8×4 = <b>0x00200020</b></li>
+      <li>页号 9 的页表项 = 0x00200000 + 9×4 = <b>0x00200024</b></li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-part">
+    <h4>动态分区分配算法 <a class="back-top" href="#ch5">↑</a></h4>
+    <ul>
+      <li><b>首次适应 First Fit</b>：空闲链按<b>地址递增</b>排，找第一个够大的（性能综合最好）</li>
+      <li><b>最佳适应 Best Fit</b>：找最小的够大的 → 大量小碎片</li>
+      <li><b>最坏适应 Worst Fit</b>：找最大的 → 破坏大块</li>
+      <li><b>邻近适应 Next Fit</b>：从上次位置开始</li>
+    </ul>
+    <p><b>作业三第 2 题：</b>首次适应分配 60K，从地址 100K 开始扫描，跳过 50K 不够，选 200K(100K) 用 60K，剩 40K 起始 260K</p>
+  </div>
+
+  <div class="detail" id="c-pseg">
+    <h4>分页 vs 分段 <a class="back-top" href="#ch5">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th></th><th>分页</th><th>分段</th></tr>
+      <tr><td>大小</td><td>定长</td><td>变长</td></tr>
+      <tr><td>单位</td><td>物理</td><td>逻辑</td></tr>
+      <tr><td>对用户</td><td>透明</td><td>可见</td></tr>
+      <tr><td>碎片</td><td>内部</td><td>外部</td></tr>
+      <tr><td>共享</td><td>较难</td><td>易（因为是逻辑单位）</td></tr>
+    </table>
+    <p><b>内部碎片</b>：页内未用空间（分页特有）</p>
+  </div>
+
+  <div class="detail" id="c-mmu">
+    <h4>地址转换是谁做的 <a class="back-top" href="#ch5">↑</a></h4>
+    <p>由 <b>硬件</b>（MMU 内存管理单元）完成，不是操作系统也不是软件。OS 负责设置页表。</p>
+  </div>
+
+  <div class="detail" id="c-load">
+    <h4>程序从源码到内存的过程 <a class="back-top" href="#ch5">↑</a></h4>
+    <p><b>三阶段：编译 → 链接 → 装入</b></p>
+    <ol>
+      <li><b>编译</b>：源码 → 目标模块（.o），各模块地址都从 0 开始（局部编号）</li>
+      <li><b>链接</b>：多个 .o → 可装入模块
+        <ul>
+          <li><b>静态链接</b>：装入前完成，生成完整可执行文件</li>
+          <li><b>装入时动态链接</b>：装入时边装边链</li>
+          <li><b>运行时动态链接</b>：用到才链（.dll / .so）</li>
+        </ul>
+      </li>
+      <li><b>装入</b>：可装入模块 → 内存，有三种方式：
+        <ul>
+          <li><b>绝对装入</b>：编译时确定物理地址（仅单道系统）</li>
+          <li><b>可重定位装入（静态重定位）</b>：装入时一次性修改地址，<b>装入后不能移动</b></li>
+          <li><b>动态运行时装入</b>：执行时由 MMU 翻译（现代 OS 用，配重定位寄存器），<b>装入后可移动</b></li>
+        </ul>
+      </li>
+    </ol>
+    <p><b>内存保护机制</b>：</p>
+    <ul>
+      <li>界限寄存器：上下界对，越界中断</li>
+      <li>重定位+界限：基址做偏移、长度做检查</li>
+      <li>页表/段表的存取控制位（R/W/X）</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CH5b: 分段与段页式 ============ -->
+<section class="chapter" id="ch5b">
+  <h3><span class="chnum">CH 5+</span>分段内存与段页式</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">分段地址翻译</td><td class="gist">逻辑地址=(段号,段内偏移) → 查段表 → 检查越界 → 物理地址</td><td class="links"><a class="jump" href="#c-seg">概念</a><a class="jump calc" href="#p-seg-trans">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">段表结构</td><td class="gist">每段：基址 + 长度 + 权限位</td><td class="links"><a class="jump" href="#c-segtab">概念</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">段页式翻译</td><td class="gist">逻辑地址=(段号,页号,偏移) → 段表→页表→物理地址</td><td class="links"><a class="jump" href="#c-segpage">概念</a><a class="jump calc" href="#p-segpage-trans">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">分页 vs 分段 vs 段页</td><td class="gist">页：定长+物理；段：变长+逻辑；段页：兼具</td><td class="links"><a class="jump" href="#c-compare3">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">段共享与保护</td><td class="gist">段是逻辑单位，共享只需指向同一段；权限按段设</td><td class="links"><a class="jump" href="#c-seg-share">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">外部碎片处理</td><td class="gist">分段产生外部碎片；可用紧凑 compaction 解决</td><td class="links"><a class="jump" href="#c-frag">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-seg">
+    <h4>分段地址翻译 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p><b>逻辑地址结构</b>：<code>(段号 s, 段内偏移 d)</code></p>
+    <p><b>翻译步骤：</b></p>
+    <ol>
+      <li>从段表寄存器找到段表起始地址</li>
+      <li>用段号 s 索引段表，得到该段的<b>基址</b>和<b>段长</b></li>
+      <li>检查 <code>d &lt; 段长</code>？否则触发<b>越界中断</b></li>
+      <li>检查权限位（读/写/执行）</li>
+      <li>物理地址 = 基址 + d</li>
+    </ol>
+    <p class="pitfall">和分页不同：段内偏移是直接相加，不是拼接（因为段长不固定不能用位运算）</p>
+  </div>
+
+  <div class="detail" id="c-segtab">
+    <h4>段表项结构 <a class="back-top" href="#ch5b">↑</a></h4>
+    <div class="formula">
+      段表项 = | 基址 | 段长 | 权限位 | 存在位 | 修改位 |
+    </div>
+    <ul>
+      <li><b>基址</b>：该段在物理内存中的起始地址</li>
+      <li><b>段长</b>：用于越界检查</li>
+      <li><b>权限</b>：R / W / X，按段独立设置</li>
+      <li><b>存在位</b>：段是否在内存（虚拟分段）</li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-seg-trans">
+    <h4>计算例题：分段地址翻译 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p><b>例：</b>段表如下，访问逻辑地址 (1, 200) 和 (2, 1000)</p>
+    <table class="kt" style="margin:0;">
+      <tr><th>段号</th><th>基址</th><th>段长</th></tr>
+      <tr><td>0</td><td>1000</td><td>500</td></tr>
+      <tr><td>1</td><td>3000</td><td>300</td></tr>
+      <tr><td>2</td><td>5000</td><td>800</td></tr>
+    </table>
+    <ul>
+      <li>(1, 200)：检查 200 &lt; 300 ✓ → 物理地址 = 3000 + 200 = <b>3200</b></li>
+      <li>(2, 1000)：检查 1000 &lt; 800 ✗ → <b>越界中断</b></li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-segpage">
+    <h4>段页式翻译 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p><b>设计目的</b>：兼具分段的逻辑性（共享、保护）和分页的物理高效（无外部碎片）。</p>
+    <p><b>逻辑地址结构</b>：<code>(段号 s, 页号 p, 页内偏移 d)</code></p>
+    <p><b>翻译步骤（三次访存）：</b></p>
+    <ol>
+      <li>段号 s → 查<b>段表</b>，得到该段的页表起始地址和段长</li>
+      <li>检查 (页号, 偏移) 是否越段长</li>
+      <li>页号 p → 查<b>该段的页表</b>，得到页框号</li>
+      <li>物理地址 = 页框号 × 页大小 + 偏移</li>
+    </ol>
+    <p>因为段大小可变，每段有<b>独立的页表</b>。</p>
+    <p class="pitfall">不加 TLB 时段页式需要 3 次访存（段表、页表、数据），代价高 → 必须配 TLB</p>
+  </div>
+
+  <div class="detail calc" id="p-segpage-trans">
+    <h4>计算例题：段页式翻译 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p><b>条件</b>：段号 4 位、页号 8 位、偏移 12 位（页大小 4KB），总 24 位地址</p>
+    <p>逻辑地址 LA = 0x213ABC（二进制：<code>0010 0001 0011 1010 1011 1100</code>）</p>
+<pre><code>偏移 = LA & 0xFFF         = 0xABC   ← 低 12 位
+页号 = (LA >> 12) & 0xFF  = 0x13    ← 接下来 8 位
+段号 = (LA >> 20) & 0xF   = 0x2     ← 高 4 位
+
+翻译流程：
+1. 查段表[0x2] → 得页表起始地址 PT_base + 段长
+2. 检查 页号×4KB + 偏移 < 段长 ?
+3. 查 PT_base[0x13] → 得页框号 F
+4. 物理地址 = (F &lt;&lt; 12) | 0xABC</code></pre>
+    <p><b>通用套路（从低到高拆位）：</b></p>
+    <ol>
+      <li>偏移 = LA &amp; (2^k − 1)，k = 偏移位数</li>
+      <li>页号 = (LA &gt;&gt; k) &amp; (2^p − 1)，p = 页号位数</li>
+      <li>段号 = LA &gt;&gt; (k + p)</li>
+    </ol>
+    <p class="pitfall">先确定每段位数，再算掩码；不要凭直觉拆 hex 数字</p>
+  </div>
+
+  <div class="detail" id="c-compare3">
+    <h4>分页 / 分段 / 段页式三方对比 <a class="back-top" href="#ch5b">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th></th><th>分页</th><th>分段</th><th>段页式</th></tr>
+      <tr><td>大小</td><td>定长</td><td>变长</td><td>段变长、页定长</td></tr>
+      <tr><td>单位</td><td>物理</td><td>逻辑</td><td>逻辑+物理</td></tr>
+      <tr><td>对用户</td><td>透明</td><td>可见</td><td>可见</td></tr>
+      <tr><td>碎片</td><td>内部</td><td>外部</td><td>内部</td></tr>
+      <tr><td>共享</td><td>较难</td><td>易</td><td>易</td></tr>
+      <tr><td>地址</td><td>一维</td><td>二维 (s,d)</td><td>三维 (s,p,d)</td></tr>
+      <tr><td>访存次数</td><td>2 次</td><td>2 次</td><td>3 次（需 TLB）</td></tr>
+    </table>
+  </div>
+
+  <div class="detail" id="c-seg-share">
+    <h4>段的共享与保护 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p><b>为什么段共享比页共享容易：</b></p>
+    <ul>
+      <li>段是<b>逻辑单位</b>（一段代码、一个数据结构），整段共享语义清晰</li>
+      <li>页是物理切片，一个逻辑对象可能跨多页，共享需协调每一页</li>
+    </ul>
+    <p><b>共享实现</b>：多个进程的段表中相应段表项指向同一物理段。</p>
+    <p><b>保护</b>：段表项里的权限位（R/W/X）按段独立设置，可信代码段不可写，数据段不可执行等。</p>
+  </div>
+
+  <div class="detail" id="c-frag">
+    <h4>外部碎片与紧凑 <a class="back-top" href="#ch5b">↑</a></h4>
+    <p>分段会产生<b>外部碎片</b>：内存中散落的小块空闲区，单个都不够用。</p>
+    <p><b>紧凑（compaction）</b>：把所有已分配段挪到一边，空闲合并成大块。代价高（要移动数据并更新段表）。</p>
+    <p>段页式因为段被切成页，物理上不需要连续，<b>消除了外部碎片</b>。</p>
+  </div>
+</section>
+
+<!-- ============ CH6 ============ -->
+<section class="chapter" id="ch6">
+  <h3><span class="chnum">CH 06</span>虚拟内存</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">页面置换算法</td><td class="gist">OPT/FIFO/LRU/CLOCK；记录每次缺页和淘汰</td><td class="links"><a class="jump" href="#c-replace">概念</a><a class="jump calc" href="#p-replace">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">TLB + 缺页时间</td><td class="gist">三场景：命中、TLB miss、缺页；缺页要重新执行</td><td class="links"><a class="jump" href="#c-tlb">概念</a><a class="jump calc" href="#p-tlb">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">CLOCK 时钟算法</td><td class="gist">访问位=1 → 清零后移；=0 → 淘汰</td><td class="links"><a class="jump calc" href="#p-clock">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">虚拟容量决定因素</td><td class="gist">由地址字长决定（不是内存大小）</td><td class="links"><a class="jump" href="#c-cap">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">抖动 Thrashing</td><td class="gist">物理块少于工作集 → 频繁缺页</td><td class="links"><a class="jump" href="#c-thrash">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">页面大小权衡</td><td class="gist">小→页表大；大→内部碎片大；与优先级无关</td><td class="links"><a class="jump" href="#c-pgsize">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-replace">
+    <h4>四种页面置换算法 <a class="back-top" href="#ch6">↑</a></h4>
+    <ul>
+      <li><b>OPT 最佳</b>：淘汰未来最久不用的（理论最优，不可实现）</li>
+      <li><b>FIFO</b>：淘汰最早装入的（有 Belady 异常）</li>
+      <li><b>LRU</b>：淘汰最久未用的（接近 OPT，开销大）</li>
+      <li><b>CLOCK</b>：循环扫描访问位（LRU 近似，实际常用）</li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-replace">
+    <h4>计算套路：缺页次数 <a class="back-top" href="#ch6">↑</a></h4>
+    <ol>
+      <li>画表格：每列一次访问，每行一个物理块</li>
+      <li>判断是否命中；未命中→缺页+1，按算法选淘汰对象</li>
+      <li>更新各块内容和辅助信息（FIFO 的进入顺序、LRU 的最近使用、CLOCK 的访问位）</li>
+    </ol>
+    <p><b>作业三第 3 题（LRU，3 块）：</b>序列 1,2,3,4,1,2,5,1,2,3,4,5 → 缺页 <b>9</b> 次</p>
+  </div>
+
+  <div class="detail" id="c-tlb">
+    <h4>TLB 地址翻译三场景 <a class="back-top" href="#ch6">↑</a></h4>
+    <ul>
+      <li><b>TLB 命中</b>：TLB 时间 + 内存时间</li>
+      <li><b>TLB 未命中，页在内存</b>：TLB + 页表 + 内存</li>
+      <li><b>缺页</b>：TLB + 页表 + 缺页处理 + <b>重新执行</b>（再走一遍 TLB+页表+内存）</li>
+    </ul>
+    <p class="pitfall">缺页处理完后是重新执行整条指令，所以要算两遍地址转换时间</p>
+
+    <div class="viz">
+      <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,sans-serif">
+        <!-- CPU -->
+        <rect x="20" y="20" width="100" height="50" fill="#1e4d6b" stroke="#1e4d6b"/>
+        <text x="70" y="42" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">CPU</text>
+        <text x="70" y="58" text-anchor="middle" fill="#fff" font-size="10">发出逻辑地址</text>
+
+        <!-- Arrow to TLB -->
+        <line x1="120" y1="45" x2="180" y2="45" stroke="#1e4d6b" stroke-width="2" marker-end="url(#arr2)"/>
+        <text x="125" y="38" font-size="10" fill="#1e4d6b">页号 p</text>
+
+        <!-- TLB -->
+        <rect x="180" y="20" width="160" height="80" fill="#fff" stroke="#b8341c" stroke-width="2"/>
+        <text x="260" y="38" text-anchor="middle" font-size="12" font-weight="600" fill="#b8341c">TLB（页号→页框号缓存）</text>
+        <line x1="180" y1="44" x2="340" y2="44" stroke="#b8341c"/>
+        <text x="200" y="60" font-size="10" fill="#555">页号</text>
+        <text x="290" y="60" font-size="10" fill="#555">页框号</text>
+        <rect x="195" y="65" width="40" height="14" fill="#fafaf7" stroke="#ddd"/>
+        <rect x="265" y="65" width="60" height="14" fill="#fafaf7" stroke="#ddd"/>
+        <rect x="195" y="82" width="40" height="14" fill="#fafaf7" stroke="#ddd"/>
+        <rect x="265" y="82" width="60" height="14" fill="#fafaf7" stroke="#ddd"/>
+
+        <!-- Decision diamond -->
+        <polygon points="420,60 480,30 540,60 480,90" fill="#fff8e7" stroke="#d4a017" stroke-width="2"/>
+        <text x="480" y="58" text-anchor="middle" font-size="12" font-weight="600" fill="#d4a017">TLB 命中？</text>
+        <text x="480" y="74" text-anchor="middle" font-size="10" fill="#888">查询</text>
+
+        <line x1="340" y1="60" x2="420" y2="60" stroke="#b8341c" stroke-width="2" marker-end="url(#arr2)"/>
+
+        <!-- Hit path: right -->
+        <line x1="540" y1="60" x2="610" y2="60" stroke="#2d6a4f" stroke-width="2" marker-end="url(#arr3)"/>
+        <text x="555" y="52" font-size="11" fill="#2d6a4f" font-weight="600">命中 ✓</text>
+        <rect x="610" y="35" width="90" height="50" fill="#d4edda" stroke="#2d6a4f" stroke-width="2"/>
+        <text x="655" y="55" text-anchor="middle" font-size="11" fill="#2d6a4f" font-weight="600">取页框号</text>
+        <text x="655" y="72" text-anchor="middle" font-size="10" fill="#2d6a4f">→ 访问数据</text>
+
+        <!-- Miss path: down -->
+        <line x1="480" y1="90" x2="480" y2="140" stroke="#b8341c" stroke-width="2" marker-end="url(#arr2)"/>
+        <text x="490" y="115" font-size="11" fill="#b8341c" font-weight="600">未命中 ✗</text>
+
+        <!-- Page table -->
+        <rect x="380" y="140" width="200" height="60" fill="#fff" stroke="#1e4d6b" stroke-width="2"/>
+        <text x="480" y="160" text-anchor="middle" font-size="12" font-weight="600" fill="#1e4d6b">页表 (在内存)</text>
+        <text x="480" y="178" text-anchor="middle" font-size="10" fill="#888">读 PTE 检查"有效位"</text>
+        <text x="480" y="192" text-anchor="middle" font-size="10" fill="#888">+200ns 访存开销</text>
+
+        <!-- Decision: valid? -->
+        <polygon points="420,230 480,200 540,230 480,260" fill="#fff8e7" stroke="#d4a017" stroke-width="2"/>
+        <text x="480" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#d4a017">页在内存？</text>
+        <line x1="480" y1="200" x2="480" y2="200" stroke="#1e4d6b" stroke-width="2"/>
+
+        <!-- Yes: update TLB, access -->
+        <line x1="540" y1="230" x2="610" y2="230" stroke="#2d6a4f" stroke-width="2" marker-end="url(#arr3)"/>
+        <text x="555" y="222" font-size="11" fill="#2d6a4f" font-weight="600">是 ✓</text>
+        <rect x="610" y="205" width="90" height="50" fill="#d4edda" stroke="#2d6a4f" stroke-width="2"/>
+        <text x="655" y="225" text-anchor="middle" font-size="11" fill="#2d6a4f" font-weight="600">更新 TLB</text>
+        <text x="655" y="242" text-anchor="middle" font-size="10" fill="#2d6a4f">→ 访问数据</text>
+
+        <!-- No: page fault -->
+        <line x1="480" y1="260" x2="480" y2="295" stroke="#b8341c" stroke-width="2" marker-end="url(#arr2)"/>
+        <text x="490" y="282" font-size="11" fill="#b8341c" font-weight="600">否 ✗ (缺页)</text>
+        <rect x="380" y="295" width="200" height="60" fill="#fbeae5" stroke="#b8341c" stroke-width="2"/>
+        <text x="480" y="315" text-anchor="middle" font-size="12" font-weight="600" fill="#b8341c">缺页中断处理</text>
+        <text x="480" y="332" text-anchor="middle" font-size="10" fill="#888">磁盘 I/O 调入页（~10ms）</text>
+        <text x="480" y="348" text-anchor="middle" font-size="10" fill="#888">更新页表后重新执行 ↻</text>
+
+        <!-- Loop back arrow -->
+        <path d="M 380 325 Q 30 325 30 70 L 30 45 L 18 45" fill="none" stroke="#b8341c" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arr2)"/>
+        <text x="38" y="220" font-size="10" fill="#b8341c">重新执行</text>
+
+        <defs>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L0,8 L6,4 z" fill="#b8341c"/>
+          </marker>
+          <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L0,8 L6,4 z" fill="#2d6a4f"/>
+          </marker>
+        </defs>
+      </svg>
+      <div class="viz-caption">TLB 翻译三场景：命中（绿色快路径）/ TLB miss（查页表）/ 缺页（虚线回路，需重新执行）</div>
+    </div>
+  </div>
+
+  <div class="detail calc" id="p-tlb">
+    <h4>计算例题：TLB + 缺页时间（作业三第 10 题） <a class="back-top" href="#ch6">↑</a></h4>
+    <p>TLB=2ns，内存=200ns，缺页=10ms。序列 31A2H、24C2H、30B4H（页大小 4KB）</p>
+    <p><b>31A2H</b>（页号 3，缺页）：</p>
+<pre><code>TLB miss(2ns) + 页表(200ns) + 缺页处理(10ms)
++ 重新执行: TLB miss(2ns) + 页表(200ns) + 访存(200ns)
+= 10ms + 604ns</code></pre>
+    <p><b>24C2H</b>（页号 2，已在内存）：2 + 200 + 200 = <b>402ns</b></p>
+    <p><b>30B4H</b>（页号 3，TLB 刚装入）：2 + 200 = <b>202ns</b></p>
+    <p><b>24C2H 物理地址：</b>页框 254H，偏移 4C2H → 254H × 1000H + 4C2H = <b>0x2544C2</b></p>
+  </div>
+
+  <div class="detail calc" id="p-clock">
+    <h4>计算例题：CLOCK 算法（作业三第 9 题） <a class="back-top" href="#ch6">↑</a></h4>
+    <p>4 页框已满，访问位见表，指针指向 2 号页框。</p>
+    <p><b>步骤：</b></p>
+    <ol>
+      <li>若指针处访问位=0 → 淘汰；新页放入，访问位置 1，指针后移</li>
+      <li>若访问位=1 → 清零，指针后移，继续</li>
+      <li>一圈内必有 0（被清零的）</li>
+    </ol>
+    <p><b>FIFO 题（替换装入时刻最早的页）：</b>页 0（130 最早）被替换，新页装入页框 7 → 物理地址 = 7×1024 + 0x3CA = <b>0x1FCA</b></p>
+    <p><b>CLOCK 题：</b>当前访问位都为 1，轮一圈全清零后指针回到 2 号位（最早 0 的位置），淘汰页 2 → 新页装入页框 2 → <b>0x0BCA</b></p>
+  </div>
+
+  <div class="detail" id="c-cap">
+    <h4>虚拟存储容量 <a class="back-top" href="#ch6">↑</a></h4>
+    <p>由<b>地址字长</b>决定，不是物理内存、不是外存、不是两者之和。</p>
+    <p>32 位地址 → 4GB 虚拟空间，与实际硬件无关。</p>
+  </div>
+
+  <div class="detail" id="c-thrash">
+    <h4>抖动 Thrashing <a class="back-top" href="#ch6">↑</a></h4>
+    <p><b>根本原因</b>：分配给进程的物理块数 &lt; 它的工作集</p>
+    <p>结果：频繁缺页，CPU 大部分时间花在调页 → 解决方案：工作集模型、PFF 缺页率算法、降低多道度</p>
+  </div>
+
+  <div class="detail" id="c-pgsize">
+    <h4>页面大小权衡 <a class="back-top" href="#ch6">↑</a></h4>
+    <p>考虑因素：内部碎片、页表大小、I/O 开销、缺页率</p>
+    <p class="pitfall">页面大小与<b>进程优先级</b>无关（作业三 Part2 第 4 题）</p>
+  </div>
+</section>
+
+<!-- ============ CH7 ============ -->
+<section class="chapter" id="ch7">
+  <h3><span class="chnum">CH 07</span>I/O 系统</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">磁盘调度 SSTF</td><td class="gist">将簇号转柱面号，每次选最近的</td><td class="links"><a class="jump" href="#c-sched">概念</a><a class="jump calc" href="#p-sstf">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">磁盘访问时间</td><td class="gist">寻道 + 旋转延迟(半圈) + 传输</td><td class="links"><a class="jump calc" href="#p-disktime">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">DMA 流程</td><td class="gist">② 启动 → ③ 传输 → ① 中断 → ④ ISR</td><td class="links"><a class="jump" href="#c-dma">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">磁盘容量计算</td><td class="gist">盘面 × 柱面 × 扇区 × 扇区大小</td><td class="links"><a class="jump calc" href="#p-cap">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">SPOOLing 假脱机</td><td class="gist">磁盘井+缓冲，把独占设备伪装成共享</td><td class="links"><a class="jump" href="#c-spool">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">缓冲池</td><td class="gist">缓解 CPU 与 I/O 速度差；单/双/循环/池</td><td class="links"><a class="jump" href="#c-buffer">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">系统启动顺序</td><td class="gist">ROM → 磁盘引导 → 分区引导 → OS 初始化</td><td class="links"><a class="jump" href="#c-boot">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">中断向量表</td><td class="gist">存中断处理程序入口地址</td><td class="links"><a class="jump" href="#c-int">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-dma">
+    <h4>DMA 工作流程 <a class="back-top" href="#ch7">↑</a></h4>
+    <p>正确顺序：<b>② → ③ → ① → ④</b></p>
+    <ol>
+      <li>② CPU 初始化 DMA 控制器并启动磁盘</li>
+      <li>③ 从磁盘传输一块数据到内存（DMA 自动完成）</li>
+      <li>① DMA 控制器发出中断请求</li>
+      <li>④ CPU 执行"DMA 结束"中断服务程序</li>
+    </ol>
+    <p class="pitfall">DMA 完成后<b>需要</b>中断 CPU；DMA 控制器需要知道内存地址；DMA 不能处理"所有细节"（错误处理仍需 CPU）</p>
+  </div>
+
+  <div class="detail calc" id="p-cap">
+    <h4>计算例题：磁盘容量（作业四第 3 题） <a class="back-top" href="#ch7">↑</a></h4>
+    <div class="formula">容量 = 盘面数 × 柱面数 × 每磁道扇区数 × 扇区大小</div>
+    <p>10 × 100 × 64 × 512 = 32,768,000 ≈ <b>32MB</b></p>
+  </div>
+
+  <div class="detail calc" id="p-disktime">
+    <h4>计算例题：磁盘访问时间（作业四第 5 题） <a class="back-top" href="#ch7">↑</a></h4>
+    <p>7200 RPM，平均寻道 8ms</p>
+    <ul>
+      <li>旋转一圈 = 60/7200 s = 8.33ms</li>
+      <li>平均旋转延迟 = 8.33/2 ≈ <b>4.17ms</b>（半圈）</li>
+      <li>传输时间通常很小，忽略</li>
+      <li>总计 ≈ 8 + 4 ≈ <b>12ms</b></li>
+    </ul>
+    <p class="pitfall">7200 RPM 平均旋转延迟 4ms；5400 RPM 约 5.5ms</p>
+  </div>
+
+  <div class="detail" id="c-sched">
+    <h4>磁盘调度算法 <a class="back-top" href="#ch7">↑</a></h4>
+    <ul>
+      <li><b>FCFS</b>：按请求顺序，公平但低效</li>
+      <li><b>SSTF</b>：选离当前最近的，高效但可能饥饿</li>
+      <li><b>SCAN（电梯）</b>：单向扫到头再返回</li>
+      <li><b>C-SCAN</b>：单向扫到头直接回到起点再扫</li>
+      <li><b>LOOK / C-LOOK</b>：到最后一个请求处就转向</li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-sstf">
+    <h4>计算例题：SSTF（作业四第 7 题） <a class="back-top" href="#ch7">↑</a></h4>
+    <p>磁头在 85 号柱面，4 个簇号 100260、60005、101660、110560</p>
+    <p>每柱面 10 磁道 × 200 扇区，每簇 2 扇区 → <b>每柱面 1000 簇</b></p>
+    <p>簇号 → 柱面 = 簇号 / 1000：100260→100、60005→60、101660→101、110560→110</p>
+    <p>距 85 的距离：15、25、16、25 → SSTF 顺序：<b>100→101→110→60</b></p>
+    <p>即访问簇 <b>100260 → 101660 → 110560 → 60005</b></p>
+  </div>
+
+  <div class="detail" id="c-spool">
+    <h4>SPOOLing 假脱机 <a class="back-top" href="#ch7">↑</a></h4>
+    <p><b>核心思想</b>：用磁盘+内存把独占设备（如打印机）伪装成共享设备。</p>
+    <p><b>四个组件：</b></p>
+    <ul>
+      <li><b>输入井 / 输出井</b>：磁盘上的缓冲区（模拟设备）</li>
+      <li><b>输入缓冲 / 输出缓冲</b>：内存中转</li>
+      <li><b>输入进程 / 输出进程</b>：后台守护进程</li>
+      <li><b>请求队列</b>：等待服务的作业表</li>
+    </ul>
+    <p><b>流程</b>：进程写到输出井并立即返回 → 后台 spooler 慢慢送到打印机</p>
+    <p><b>好处</b>：进程不必等慢设备；多请求排队；独占变共享</p>
+  </div>
+
+  <div class="detail" id="c-buffer">
+    <h4>缓冲区 <a class="back-top" href="#ch7">↑</a></h4>
+    <p><b>主要作用</b>：缓解 CPU 与 I/O 速度不匹配（不是加快 CPU、不是扩内存）</p>
+    <table class="kt" style="margin:0;">
+      <tr><th>类型</th><th>结构</th><th>处理时间</th></tr>
+      <tr><td>单缓冲</td><td>1 个</td><td>max(C, T) + M</td></tr>
+      <tr><td>双缓冲</td><td>2 个交替</td><td>max(C, T+M)</td></tr>
+      <tr><td>循环缓冲</td><td>n 个环形</td><td>更高并行</td></tr>
+      <tr><td>缓冲池</td><td>多设备共享</td><td>最灵活</td></tr>
+    </table>
+    <p>T=I/O 时间，M=缓冲→用户区时间，C=CPU 处理时间</p>
+  </div>
+
+  <div class="detail" id="c-boot">
+    <h4>系统启动顺序（作业四第 8 题） <a class="back-top" href="#ch7">↑</a></h4>
+    <p><b>执行顺序：</b>ROM 引导程序 → 磁盘引导程序（MBR）→ 分区引导程序 → OS 初始化程序</p>
+    <p><b>制作启动盘四步：</b></p>
+    <ol>
+      <li>物理格式化（划分扇区）</li>
+      <li>分区（建立分区表）</li>
+      <li>逻辑格式化（建立文件系统、根目录）</li>
+      <li>安装操作系统</li>
+    </ol>
+    <p><b>关键问答：</b></p>
+    <ul>
+      <li>磁盘扇区的划分在 <b>物理格式化</b> 中完成</li>
+      <li>文件系统根目录的建立在 <b>逻辑格式化</b> 中完成</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-int">
+    <h4>中断向量表 <a class="back-top" href="#ch7">↑</a></h4>
+    <p>存储<b>中断处理程序的入口地址</b>。不是存中断号、也不是优先级。</p>
+    <p>CPU 收到中断 → 用中断号查表 → 跳转到处理程序入口</p>
+  </div>
+</section>
+
+<!-- ============ CH8 ============ -->
+<section class="chapter" id="ch8">
+  <h3><span class="chnum">CH 08</span>文件系统</h3>
+  <table class="kt">
+    <thead><tr><th class="imp">重要</th><th class="topic">考点</th><th class="gist">要点</th><th class="links">跳转</th></tr></thead>
+    <tbody>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">索引节点容量计算</td><td class="gist">直接+一级+二级+三级，按级累加</td><td class="links"><a class="jump" href="#c-inode">概念</a><a class="jump calc" href="#p-inode-cap">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">索引节点 I/O 次数</td><td class="gist">判断偏移落在哪一级 → I/O = 索引层数 + 1</td><td class="links"><a class="jump calc" href="#p-inode-io">计算</a></td></tr>
+      <tr data-imp="3"><td class="imp stars-3">★★★</td><td class="topic">三种文件分配方式</td><td class="gist">连续/链接/索引；各自的随机访问、扩展性</td><td class="links"><a class="jump" href="#c-alloc">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">记录插入题</td><td class="gist">顺序：要移动后续；链接：改两个指针</td><td class="links"><a class="jump calc" href="#p-insert">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">打开文件做什么</td><td class="gist">把 FCB/inode 读入内存的打开文件表</td><td class="links"><a class="jump" href="#c-open">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">访问加速方法</td><td class="gist">提前读 + 延迟写 + 连续分配 + 高速缓存（4 种都有效）</td><td class="links"><a class="jump" href="#c-speed">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">目录结构演进</td><td class="gist">单级→两级→树形→无环图→通用图</td><td class="links"><a class="jump" href="#c-dir-evo">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">空闲空间管理</td><td class="gist">位图、空闲链、空闲表、成组链接</td><td class="links"><a class="jump" href="#c-freespace">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">FAT 文件系统</td><td class="gist">每块一项的链接表；常驻内存加快随机访问</td><td class="links"><a class="jump" href="#c-fat">概念</a><a class="jump calc" href="#p-fat">计算</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">EXT2 文件系统</td><td class="gist">超级块+块组+inode 位图+数据位图+inode 表+数据块</td><td class="links"><a class="jump" href="#c-ext2">概念</a></td></tr>
+      <tr data-imp="2"><td class="imp stars-2">★★</td><td class="topic">硬链接 / 软链接</td><td class="gist">硬链接共享 inode；软链接是路径指针</td><td class="links"><a class="jump" href="#c-link">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">目录结构</td><td class="gist">文件名→FCB 映射；UNIX 用 inode 号</td><td class="links"><a class="jump" href="#c-dir">概念</a></td></tr>
+      <tr data-imp="1"><td class="imp stars-1">★</td><td class="topic">逻辑结构 vs 物理结构</td><td class="gist">逻辑=用户视角；物理=存储方式</td><td class="links"><a class="jump" href="#c-logphys">概念</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="detail" id="c-inode">
+    <h4>UNIX inode 多级索引 <a class="back-top" href="#ch8">↑</a></h4>
+    <p>典型设计：12 直接 + 1 一级 + 1 二级 + 1 三级</p>
+    <p>每个索引块装的指针数 = <b>块大小 / 指针大小</b></p>
+    <ul>
+      <li>小文件 → 仅用直接指针，1 次 I/O 即得地址</li>
+      <li>大文件 → 按需展开多级索引</li>
+    </ul>
+  </div>
+
+  <div class="detail calc" id="p-inode-cap">
+    <h4>计算套路：最大文件容量 <a class="back-top" href="#ch8">↑</a></h4>
+    <div class="formula">
+      令 n = 块大小 / 指针大小（一个索引块装的指针数）<br>
+      直接覆盖 = 直接指针数 × 块大小<br>
+      一级覆盖 = n × 块大小<br>
+      二级覆盖 = n² × 块大小<br>
+      三级覆盖 = n³ × 块大小<br>
+      最大容量 = 全部相加
+    </div>
+    <p><b>例（作业四第 7 题）：</b>4 直接 + 2 一级 + 1 二级，块 256B，指针 4B</p>
+    <ul>
+      <li>n = 256/4 = 64</li>
+      <li>直接：4 × 256B = 1KB</li>
+      <li>一级（2 个）：2 × 64 × 256B = 32KB</li>
+      <li>二级（1 个）：64 × 64 × 256B = 1024KB</li>
+      <li>总 = <b>1057KB</b></li>
+    </ul>
+    <p class="pitfall">数清直接/一级/二级<b>各几个</b>地址项！题目可能给 2 个一级而不是 1 个</p>
+  </div>
+
+  <div class="detail calc" id="p-inode-io">
+    <h4>计算套路：访问偏移要几次 I/O <a class="back-top" href="#ch8">↑</a></h4>
+    <ol>
+      <li>算每级覆盖的块号区间（<b>累积</b>！）</li>
+      <li>偏移字节 / 块大小 = 逻辑块号</li>
+      <li>判断该块号落在哪一级</li>
+      <li>I/O 次数 = 该级索引层数 + 1（读数据块）</li>
+    </ol>
+    <p><b>例（作业四第 6 题）：</b>10 直接+1 一级+1 二级，块 1KB，n=256（inode 已在内存）</p>
+    <ul>
+      <li>直接：块 0–9（覆盖 0–10KB）</li>
+      <li>一级：块 10–265（覆盖 10KB–266KB）</li>
+      <li>二级：块 266–65801（覆盖 266KB– ~64MB）</li>
+    </ul>
+    <p>偏移 <b>1234</b>（1.2KB）→ 块 1 → 直接 → <b>1 次 I/O</b></p>
+    <p>偏移 <b>307400</b>（300KB）→ 块 300 → 二级（300 &gt; 265）→ <b>3 次 I/O</b>（二级索引块+一级索引块+数据块）</p>
+  </div>
+
+  <div class="detail" id="c-alloc">
+    <h4>三种文件分配方式 <a class="back-top" href="#ch8">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th>方式</th><th>随机访问</th><th>扩展性</th><th>碎片</th><th>典型</th></tr>
+      <tr><td>连续</td><td>极快</td><td>难</td><td>外部</td><td>CD-ROM</td></tr>
+      <tr><td>链接</td><td>慢</td><td>易</td><td>无外部</td><td>FAT</td></tr>
+      <tr><td>索引</td><td>快</td><td>易</td><td>无外部</td><td>UNIX inode</td></tr>
+    </table>
+    <p>索引文件相比顺序文件的优点：<b>支持快速随机访问</b></p>
+  </div>
+
+  <div class="detail calc" id="p-insert">
+    <h4>计算例题：记录插入（作业四第 8 题） <a class="back-top" href="#ch8">↑</a></h4>
+    <p>200 条记录，插入新记录到第 30 条位置</p>
+    <p><b>(1) 顺序分配：</b>后续 171 条全部后移</p>
+    <ul>
+      <li>读 171 次 + 写 171 次 + 写新记录 1 次 ≈ <b>343 次访问</b></li>
+      <li>FCB 变化：文件长度由 200 → 201</li>
+    </ul>
+    <p><b>(2) 链接分配：</b>顺链找到第 29 条，改两个指针</p>
+    <ul>
+      <li>读 29 次（找位置）+ 写第 29 条新指针 + 写新记录 = <b>最少约 31 次</b></li>
+      <li>最大文件长度：若 FCB 只存起始块号，理论无上限（直到磁盘满）</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-open">
+    <h4>打开文件时 OS 做什么 <a class="back-top" href="#ch8">↑</a></h4>
+    <p>主要工作：<b>把文件控制块（FCB / inode）读入内存的打开文件表</b></p>
+    <ul>
+      <li>不会预读文件内容</li>
+      <li>不会修改 FCB 中的读写权限位</li>
+      <li>返回的是文件描述符（打开文件表的索引），不是数据缓冲区指针</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-speed">
+    <h4>文件访问加速 <a class="back-top" href="#ch8">↑</a></h4>
+    <p>下列<b>都能</b>提速：</p>
+    <ul>
+      <li><b>提前读</b>：预测下次访问，先读到缓冲</li>
+      <li><b>连续分配簇</b>：减少寻道</li>
+      <li><b>延迟写</b>：合并多次写</li>
+      <li><b>磁盘高速缓存</b>：内存缓存常用块</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-dir">
+    <h4>目录 <a class="back-top" href="#ch8">↑</a></h4>
+    <p><b>主要功能</b>：实现文件名到文件地址（FCB/inode）的映射</p>
+    <p>UNIX 设计：目录项 = (文件名, inode 号)，元数据全在 inode 里 → 硬链接容易实现</p>
+  </div>
+
+  <div class="detail" id="c-logphys">
+    <h4>逻辑结构 vs 物理结构 <a class="back-top" href="#ch8">↑</a></h4>
+    <ul>
+      <li><b>逻辑结构</b>：用户看到的文件组织形式（流式、记录式）</li>
+      <li><b>物理结构</b>：磁盘上的存储方式（连续/链接/索引）</li>
+    </ul>
+  </div>
+
+  <div class="detail" id="c-dir-evo">
+    <h4>目录结构演进 <a class="back-top" href="#ch8">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th>结构</th><th>特点</th><th>缺点</th></tr>
+      <tr><td><b>单级目录</b></td><td>全系统一张表</td><td>重名冲突、查找慢</td></tr>
+      <tr><td><b>两级目录</b></td><td>主目录+用户子目录</td><td>用户间不便共享</td></tr>
+      <tr><td><b>树形目录</b></td><td>多级嵌套（DOS/Windows）</td><td>一文件一父，不支持共享</td></tr>
+      <tr><td><b>无环图目录</b></td><td>多父（UNIX 硬链接）</td><td>删除需引用计数</td></tr>
+      <tr><td><b>通用图目录</b></td><td>允许循环</td><td>难判垃圾，需 gc</td></tr>
+    </table>
+    <p>UNIX 用<b>无环图</b>：硬链接实现一文件多父；同一 inode 被多个目录项指向。</p>
+  </div>
+
+  <div class="detail" id="c-freespace">
+    <h4>空闲空间管理（四种方法） <a class="back-top" href="#ch8">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th>方法</th><th>结构</th><th>特点</th></tr>
+      <tr><td><b>位图</b></td><td>每位代表一块（0空闲/1占用）</td><td>紧凑，找连续块快</td></tr>
+      <tr><td><b>空闲链表</b></td><td>空闲块串成链</td><td>不占额外空间，找连续块慢</td></tr>
+      <tr><td><b>空闲表</b></td><td>每项 (起始, 长度)</td><td>适合连续分配方式</td></tr>
+      <tr><td><b>成组链接</b>（UNIX）</td><td>每 100 块组成一组，组尾记下一组地址</td><td>兼顾空间和速度</td></tr>
+    </table>
+    <p><b>成组链接的精妙</b>：只需在内存里保留一个组的信息（≤ 100 个块号），分配回收都快；组用完时换下一组到内存。</p>
+  </div>
+
+  <div class="detail" id="c-fat">
+    <h4>FAT 文件系统 <a class="back-top" href="#ch8">↑</a></h4>
+    <p><b>核心思想</b>：把所有"下一块"指针集中到一张 FAT 表里，整张表常驻内存。</p>
+    <p><b>FAT 表项</b>的值含义：</p>
+    <ul>
+      <li>正常值 → 下一块号</li>
+      <li>特殊值 → EOF（文件结束）、坏块、空闲块</li>
+    </ul>
+    <p><b>优点</b>：常驻内存 → 随机访问快（不必读盘走链）</p>
+    <p><b>缺点</b>：FAT 本身占大量内存；表项位数限制了最大簇数</p>
+    <p><b>变种</b>：FAT12（软盘）/ FAT16 / FAT32（28 位有效位）/ exFAT</p>
+  </div>
+
+  <div class="detail calc" id="p-fat">
+    <h4>计算例题：FAT 分区大小（2024 真题第 19 题） <a class="back-top" href="#ch8">↑</a></h4>
+    <p><b>题</b>：块大小 4KB，FAT 表项 32 位（1 位已占用、1 位坏块，其余 30 位表块号），求最大分区和 4GB 分区的 FAT 表长。</p>
+<pre><code>最大分区：
+  可表示块号 = 2^30
+  最大分区 = 2^30 × 4KB = 2^30 × 2^12 B = 2^42 B = 4TB
+
+4GB 分区的 FAT 表长：
+  块数 = 4GB / 4KB = 2^20
+  FAT 表 = 2^20 × 4B = 4MB</code></pre>
+    <p class="pitfall">注意区分"FAT 表项位数"和"有效块号位数"（要扣掉保留位）</p>
+  </div>
+
+  <div class="detail" id="c-ext2">
+    <h4>EXT2 文件系统结构 <a class="back-top" href="#ch8">↑</a></h4>
+    <p>Linux 经典文件系统，被 EXT3/4 继承。整个分区分成<b>块组</b>（Block Group）。</p>
+    <p><b>每个块组的结构（自前向后）：</b></p>
+    <ol>
+      <li><b>超级块（Superblock）</b>：文件系统全局信息（块大小、总块数、inode 数等），每组都有副本以防损坏</li>
+      <li><b>块组描述符表</b>：所有块组的元数据位置</li>
+      <li><b>数据块位图</b>：本组数据块的空闲情况（1 块）</li>
+      <li><b>inode 位图</b>：本组 inode 的空闲情况（1 块）</li>
+      <li><b>inode 表</b>：本组所有 inode 集中存放</li>
+      <li><b>数据块区</b>：剩余空间存数据</li>
+    </ol>
+    <p><b>为什么分块组</b>：</p>
+    <ul>
+      <li>同一文件的 inode 和数据块尽量放在<b>同一块组</b> → 减少寻道</li>
+      <li>位图分组 → 单个位图块就能管理一整组</li>
+      <li>超级块多副本 → 提高可靠性</li>
+    </ul>
+    <p><b>典型 inode 结构</b>：12 直接 + 1 一级 + 1 二级 + 1 三级（共 15 个指针）</p>
+    <p class="pitfall">EXT2 相比 FAT 的优势：随机访问快（inode 多级索引）、并行友好（块组）、可靠（多副本）</p>
+  </div>
+
+  <div class="detail" id="c-link">
+    <h4>硬链接 vs 软链接 <a class="back-top" href="#ch8">↑</a></h4>
+    <table class="kt" style="margin:0;">
+      <tr><th></th><th>硬链接 hard link</th><th>软链接 symlink</th></tr>
+      <tr><td>本质</td><td>多个目录项指向<b>同一 inode</b></td><td>独立文件，内容是<b>目标路径</b></td></tr>
+      <tr><td>引用计数</td><td>inode 内 link count + 1</td><td>不增加目标的引用计数</td></tr>
+      <tr><td>跨文件系统</td><td>❌ 不能</td><td>✅ 可以</td></tr>
+      <tr><td>对目录</td><td>❌ 一般不允许</td><td>✅ 可以</td></tr>
+      <tr><td>目标删除</td><td>仍可访问（计数 ≥ 1 就保留）</td><td>变悬挂链接（dangling）</td></tr>
+      <tr><td>开销</td><td>无额外开销</td><td>多一次解析</td></tr>
+    </table>
+    <p><b>UNIX 删除文件</b>：实际是删除目录项 + inode 链接计数 -1；只有计数归零才真正释放</p>
+  </div>
+</section>
+
+<!-- ============ EXAM ANALYSIS ============ -->
+<section class="chapter" id="exam">
+  <h3 style="background:var(--accent);"><span class="chnum" style="color:#fbeae5;">真题</span>历年真题分析 · 五大必考专题</h3>
+
+  <div class="exam-hero">
+    <h3>📊 基于 2018 / 2024 / 2025 三份真题</h3>
+    <p>规律：五道大题占总分 50–60%，三年模板一致。能熟练做这五题 = 稳过 75 分。</p>
+    <p style="color:#a8896c;font-size:11px;margin-top:8px;">分析来源：哈工大深圳 2018秋、2024秋、2025秋三套期末真题（回忆版）</p>
+  </div>
+
+  <h4 style="margin-top:24px;font-size:15px;color:var(--ink);">📈 题型出现频率统计</h4>
+  <table class="freq-table">
+    <thead><tr><th>题型</th><th>2018</th><th>2024</th><th>2025</th><th>频率</th></tr></thead>
+    <tbody>
+      <tr><td>银行家算法</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><span class="must">必考</span></td></tr>
+      <tr><td>多级页表 / 段页式地址翻译</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><span class="must">必考</span></td></tr>
+      <tr><td>多级索引文件系统</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><span class="must">必考</span></td></tr>
+      <tr><td>PV 同步设计</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td><span class="must">必考</span></td></tr>
+      <tr><td>调度算法甘特图</td><td class="n">选择</td><td class="y">✓</td><td class="y">✓</td><td><span class="must">必考</span></td></tr>
+      <tr><td>磁盘调度（SSTF/SCAN）</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td><span class="high">高频</span></td></tr>
+      <tr><td>TLB + EAT 计算</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td><span class="high">高频</span></td></tr>
+      <tr><td>fork() 进程分析</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td><span class="high">高频</span></td></tr>
+      <tr><td>页面置换（FIFO/LRU/CLOCK）</td><td class="n">—</td><td class="y">✓</td><td class="n">选择</td><td><span class="high">高频</span></td></tr>
+      <tr><td>磁头臂黏着 / SimpleFS 对比</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td>新趋势</td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:24px;font-size:15px;color:var(--ink);">⏱ 推荐答题时间分配（120 分钟）</h4>
+  <div class="time-alloc">
+    <div class="time-block"><b>选择题</b><span class="mins">25 min</span><br>每题约 1.5 min，不会的先跳过</div>
+    <div class="time-block"><b>PV 同步</b><span class="mins">15 min</span><br>最易出错，细心写完整</div>
+    <div class="time-block"><b>银行家</b><span class="mins">10 min</span><br>模板化，速度要快</div>
+    <div class="time-block"><b>地址翻译</b><span class="mins">12 min</span><br>算清位数划分</div>
+    <div class="time-block"><b>调度题</b><span class="mins">10 min</span><br>画甘特图</div>
+    <div class="time-block"><b>磁盘/文件</b><span class="mins">15 min</span><br>套模板</div>
+    <div class="time-block"><b>检查</b><span class="mins">10 min</span><br>留缓冲</div>
+  </div>
+
+  <h4 style="margin-top:32px;font-size:16px;color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:6px;">🎯 五大必考题完整解法</h4>
+
+  <!-- ============ BIG 1: 银行家算法 ============ -->
+  <div class="big5" id="big-banker">
+    <div class="big5-header">
+      <h4>① 银行家算法 · 死锁避免</h4>
+      <span class="big5-badge">3/3 真题出现</span>
+    </div>
+    <div class="big5-body">
+      <p><b>题目特征</b>：给出 Allocation 矩阵、Max 矩阵、Available 向量，问安全状态 + 新请求能否满足。</p>
+      
+      <p><b>标准七步法：</b></p>
+      <ol class="steps">
+        <li><b>列 Need 矩阵</b>：<code>Need[i] = Max[i] − Allocation[i]</code>，逐元素相减</li>
+        <li><b>检查 Available</b>：写下当前可用资源向量</li>
+        <li><b>找第一个可执行进程</b>：扫描所有进程，找 <code>Need[i] ≤ Available</code> 的（每个分量都满足）</li>
+        <li><b>执行并释放</b>：该进程加入安全序列，<code>Available += Allocation[i]</code></li>
+        <li><b>重复步骤 3-4</b>：直到所有进程入列 → 安全；找不到 → 不安全</li>
+        <li><b>处理新请求</b>：检查 <code>Request ≤ Need[i]</code> 且 <code>Request ≤ Available</code>，否则拒绝</li>
+        <li><b>试分配后重判</b>：<code>Available -= Req; Alloc += Req; Need -= Req</code>，再走步骤 3-5</li>
+      </ol>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2018 秋 / 2024 秋第 3 题</p>
+        <p>4 进程 4 类资源，Available = (1,5,2,0)：</p>
+<pre><code>Need 矩阵：
+  P0: (0,0,0,0)   ← 已无需求
+  P1: (0,0,5,0)
+  P2: (1,0,0,2)
+  P3: (0,6,4,2)
+
+寻找安全序列：
+  Avail=(1,5,2,0)  → P0 Need 全 0，可执行 → 释放 (0,0,1,2)
+  Avail=(1,5,3,2)  → P2 Need=(1,0,0,2) ≤ Avail → 释放 (1,3,5,4)
+  Avail=(2,8,8,6)  → P1 Need=(0,0,5,0) ≤ Avail → 释放 (1,0,0,0)
+  Avail=(3,8,8,6)  → P3 Need=(0,6,4,2) ≤ Avail → 完成
+  
+安全序列：P0 → P2 → P1 → P3 ✓
+
+新请求 P1 Req=(0,4,2,0)：
+  检查 (0,4,2,0) ≤ Need_P1=(0,0,5,0)？ 4 &gt; 0 ✗ 拒绝</code></pre>
+      </div>
+
+      <p class="pitfall"><b>常见失分点</b>：① 忘了 Need = Max−Alloc 这一步；② 比较时漏掉某个资源类；③ 试分配后忘记更新三个矩阵；④ 找到一个安全序列就够了，不必找全部</p>
+    </div>
+  </div>
+
+  <!-- ============ BIG 2: 地址翻译 ============ -->
+  <div class="big5" id="big-trans">
+    <div class="big5-header">
+      <h4>② 多级页表 / 段页式地址翻译</h4>
+      <span class="big5-badge">3/3 真题出现</span>
+    </div>
+    <div class="big5-body">
+      <p><b>题目特征</b>：给地址位数、页大小、页表项大小，求页大小 / 页表占用 / 物理地址 / 页表项位置。</p>
+
+      <p><b>标准五步法（一级/二级页表）：</b></p>
+      <ol class="steps">
+        <li><b>算偏移位数</b>：<code>k = log₂(页大小)</code>。如 4KB 页 → k=12</li>
+        <li><b>拆地址</b>：[页目录号][页号][页内偏移]，按题目给的位宽划分</li>
+        <li><b>用 LA 算各字段</b>：
+          <pre style="margin:6px 0;"><code>页目录号 = LA >> (二级位数+偏移位数)
+页表索引 = (LA >> 偏移位数) & ((1 << 二级位数) − 1)
+偏移     = LA & ((1 << 偏移位数) − 1)</code></pre>
+        </li>
+        <li><b>查页表得页框号</b>：页表项地址 = 页表基址 + 页号 × 项大小</li>
+        <li><b>拼物理地址</b>：<code>PA = 页框号 × 页大小 + 偏移</code></li>
+      </ol>
+
+      <p><b>段页式额外步骤</b>：先用段号查段表得页表基址，再走上面流程。</p>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2018 / 2024 第 4 题（32 位地址，4KB 页，4B 项，二级页表 10+10+12）</p>
+        <p>代码段起始逻辑地址 0x00008000，装到物理地址 0x00900000，页表存放在 0x00200000：</p>
+<pre><code>(1) 页大小：2^12 = 4KB
+    一级页表占用：2^20 × 4B = 4MB
+
+(2) 给逻辑地址 LA：
+    页目录号 = LA >> 22
+    页表索引 = (LA >> 12) & 0x3FF
+    偏移     = LA & 0xFFF
+
+(3) 0x00008000 → 页号 8 = 0x00008000 >> 12
+    8KB 占 2 页 → 页号 8 和 9
+    
+    页表项地址：
+      页号 8 → 0x00200000 + 8×4 = 0x00200020
+      页号 9 → 0x00200000 + 9×4 = 0x00200024
+    
+    页框号：
+      0x00900000 / 0x1000 = 0x900 (页框 1)
+      0x00901000 / 0x1000 = 0x901 (页框 2)
+    
+    代码页面 2 起始物理地址 = 0x901 × 0x1000 = 0x00901000</code></pre>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2025 秋第 4 题（48 位地址，4KB 页，8B 项）</p>
+        <p>判断需要几级页表：</p>
+<pre><code>偏移：12 位
+剩余：48 − 12 = 36 位用于页号
+
+一级页表项数 = 2^36，占空间 = 2^36 × 8B = 512GB ✗ 不可行
+→ 必须用多级
+
+每级页表占一页 → 一页装 4KB/8B = 512 项 = 9 位
+36 / 9 = 4 → 需要 4 级页表
+
+平均访问时间（一级 + 98% TLB 命中）：
+  EAT = 10 + 0.98 × 100 + 0.02 × (100 + 100) = 112ns</code></pre>
+      </div>
+
+      <p class="pitfall"><b>常见失分点</b>：① 位运算搞错（用 0x3FF 而不是 0xFFF）；② 页表项地址忘了乘项大小；③ 算页表占用空间时漏算项数；④ 段页式访存次数算错（无 TLB 是 3 次）</p>
+    </div>
+  </div>
+
+  <!-- ============ BIG 3: 多级索引文件 ============ -->
+  <div class="big5" id="big-inode">
+    <div class="big5-header">
+      <h4>③ 多级索引文件系统</h4>
+      <span class="big5-badge">3/3 真题出现</span>
+    </div>
+    <div class="big5-body">
+      <p><b>题目特征</b>：给 inode/FCB 地址项数（直接 + 一级 + 二级 + 三级）、块大小、指针大小，求最大文件 / 某偏移的 I/O 次数 / 实际占用空间。</p>
+
+      <p><b>标准四步法：</b></p>
+      <ol class="steps">
+        <li><b>算一个索引块装多少指针</b>：<code>n = 块大小 / 指针大小</code></li>
+        <li><b>累加各级覆盖容量</b>：
+          <pre style="margin:6px 0;"><code>直接 = 直接数 × 块大小
+一级 = 一级数 × n × 块大小
+二级 = 二级数 × n² × 块大小
+三级 = 三级数 × n³ × 块大小
+最大文件 = 上述全部相加</code></pre>
+        </li>
+        <li><b>定位某偏移</b>：
+          <pre style="margin:6px 0;"><code>逻辑块号 = 字节偏移 ÷ 块大小
+判断该块号落在哪一级（按累积区间）</code></pre>
+        </li>
+        <li><b>I/O 次数</b>：<code>= 索引层数 + 1</code>（最后 +1 是读数据块本身；inode 已在内存不算）</li>
+      </ol>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2018 秋第 6 题（13 项：10 直 + 1 一 + 1 二 + 1 三，块 1KB，指针 3B）</p>
+<pre><code>n = 1024 / 3 = 341（向下取整）
+直接：10 × 1KB = 10KB
+一级：341 × 1KB ≈ 341KB
+二级：341² × 1KB ≈ 116MB
+三级：341³ × 1KB ≈ 39GB
+最大 ≈ 39GB
+
+1GB 文件实际占用（包含索引块）：
+1GB = 2^30 字节，需 2^20 个 1KB 数据块
+全部在三级索引下：
+  数据块：2^20 个
+  二级索引块：⌈2^20 / 341⌉ ≈ 3074 个
+  一级索引块：⌈3074 / 341⌉ ≈ 10 个
+  三级索引块：1 个
+总占用 ≈ 1GB + 3MB（索引开销）</code></pre>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2024 秋第 6 题（13 项：10 直+1 一+1 二+1 三，块 512B，指针 3B）</p>
+<pre><code>n = 512 / 3 = 170
+直接：10 × 512B = 5KB
+一级：170 × 512B = 85KB
+二级：170² × 512B ≈ 14MB
+三级：170³ × 512B ≈ 2.4GB
+
+字节偏移 5000 → 块号 = 5000/512 = 9 → 直接索引
+  访问 = 1 次（数据块）
+
+字节偏移 150000 → 块号 = 150000/512 = 292
+  10 ≤ 292 < 10+170=180？ 292 > 180 → 二级
+  访问 = 3 次（二级索引 + 一级索引 + 数据）
+
+最少 I/O（直接、且块在 inode 中）= 1 次
+最多 I/O（三级、块在外存）= 4 次</code></pre>
+      </div>
+
+      <p class="pitfall"><b>常见失分点</b>：① 数错地址项数（10 还是 12 个直接？）；② 区间累积错误（一级覆盖是 [直接+1, 直接+n] 不是 [0,n]）；③ 算 I/O 时忘了 inode 是否在内存；④ 实际占用没算索引块开销</p>
+    </div>
+  </div>
+
+  <!-- ============ BIG 4: PV 同步 ============ -->
+  <div class="big5" id="big-pv">
+    <div class="big5-header">
+      <h4>④ PV 同步设计</h4>
+      <span class="big5-badge">3/3 真题出现</span>
+    </div>
+    <div class="big5-body">
+      <p><b>题目特征</b>：描述一个并发场景（生产消费、读写、爸爸-儿女吃水果等），要求用 PV 操作实现。</p>
+
+      <p><b>标准五步法：</b></p>
+      <ol class="steps">
+        <li><b>识别角色和动作</b>：列出有哪些类型的进程，每个进程做什么</li>
+        <li><b>识别共享资源</b>：找需要互斥访问的变量/数据结构 → 配 <code>mutex = 1</code></li>
+        <li><b>识别等待关系</b>：谁等谁？每一种等待 → 一个同步信号量，初值通常 0</li>
+        <li><b>识别资源数量</b>：有限缓冲区/座位 → 信号量初值 = 数量</li>
+        <li><b>写代码遵守模板</b>：
+          <pre style="margin:6px 0;"><code>// 互斥包临界区
+P(mutex); ...; V(mutex);
+
+// 同步：前驱末尾 V，后继开头 P
+// 资源池：用前 P，用后 V
+
+// 永远不要持有 mutex 时去 P 阻塞信号量
+错误：P(mutex); P(empty); ... 
+正确：P(empty); P(mutex); ... V(mutex); V(full);</code></pre>
+        </li>
+      </ol>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2025 秋第 1 题：爸爸放水果，女儿吃苹果，儿子吃橘子，盘子最多 1 个</p>
+<pre><code>// 三个同步信号量
+semaphore plate  = 1;  // 盘子空位（资源池）
+semaphore apple  = 0;  // 苹果就绪事件
+semaphore orange = 0;  // 橘子就绪事件
+
+Father:                   Daughter:              Son:
+while(true) {             while(true) {          while(true) {
+  P(plate);                 P(apple);              P(orange);
+  随机放苹果或橘子;          取苹果吃;              取橘子吃;
+  if (放苹果) V(apple);     V(plate);              V(plate);
+  else        V(orange);  }                      }
+}</code></pre>
+        <p><b>分析</b>：plate=1 保证盘子互斥+容量；apple/orange=0 用于通知"对应水果已就绪"；女儿/儿子吃完才 V(plate) 给爸爸放新水果</p>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2024 秋第 1 题：生产者-消费者，缓冲区 1000，"一消费者连续取 10 件其他才能取"</p>
+<pre><code>semaphore mutex = 1;       // 缓冲区互斥
+semaphore empty = 1000;    // 空位
+semaphore full  = 0;       // 产品数
+semaphore exclusive = 1;   // 消费者独占权
+
+Producer:
+while(true) {
+  produce();
+  P(empty); P(mutex);
+  put(item);
+  V(mutex); V(full);
+}
+
+Consumer:
+while(true) {
+  P(exclusive);            // 抢到独占权
+  for (int i=0; i<10; i++) {
+    P(full); P(mutex);
+    take(item);
+    V(mutex); V(empty);
+    consume();
+  }
+  V(exclusive);            // 取完 10 件释放独占权
+}</code></pre>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2018 秋第 5 题：银行 4 窗口 + 10 座位，叫号系统</p>
+<pre><code>semaphore mutex_machine = 1;  // 取号机互斥
+semaphore seats         = 10; // 座位数
+semaphore customers     = 0;  // 等待的客人数（叫号信号）
+semaphore served        = 0;  // 服务就绪（客人等叫号）
+
+Customer:
+P(seats);                  // 抢座位
+P(mutex_machine); 取号; V(mutex_machine);
+V(customers);              // 通知营业员
+P(served);                 // 等叫号
+V(seats);                  // 离座
+接受服务;
+
+Server:
+while(true) {
+  P(customers);            // 等客人
+  叫号;
+  V(served);               // 通知客人来
+  为客人服务;
+}</code></pre>
+      </div>
+
+      <p class="pitfall"><b>常见失分点</b>：① mutex 和阻塞信号量顺序错（先 P 资源再 P mutex）；② 漏掉某种等待关系；③ 共享变量没用 mutex 保护；④ V 操作位置错（应该在改完状态后立刻 V）</p>
+    </div>
+  </div>
+
+  <!-- ============ BIG 5: 调度甘特图 ============ -->
+  <div class="big5" id="big-sched">
+    <div class="big5-header">
+      <h4>⑤ 调度算法 / 甘特图</h4>
+      <span class="big5-badge">3/3 真题出现</span>
+    </div>
+    <div class="big5-body">
+      <p><b>题目特征</b>：给若干进程的到达时间+服务时间，求 FCFS / SJF / RR / HRRN 等算法下的甘特图和平均周转时间。</p>
+
+      <p><b>标准四步法：</b></p>
+      <ol class="steps">
+        <li><b>列时间事件点</b>：所有进程的到达时刻 + 当前运行进程的结束时刻 + 时间片到期点（RR）</li>
+        <li><b>每个事件点重新决策</b>：按算法规则选下一个运行的进程
+          <ul style="margin:4px 0;">
+            <li>FCFS：选到达最早的就绪进程</li>
+            <li>SJF（非抢占）：选已到达中服务时间最短的</li>
+            <li>SJF/SRTN（抢占）：选剩余时间最短的</li>
+            <li>RR：按队列顺序，每个跑一个时间片</li>
+            <li>HRRN：每次空闲时算所有等待进程的响应比，选最高</li>
+          </ul>
+        </li>
+        <li><b>画甘特图</b>：时间轴上标出每段运行的进程和起止时刻</li>
+        <li><b>算周转时间</b>：完成 − 到达 → 求平均</li>
+      </ol>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2024 秋第 2 题：P0(0,8)、P1(0.4,4)、P2(1.0,1)，非抢占式</p>
+<pre><code>FCFS：按到达顺序
+  甘特图：P0[0,8] | P1[8,12] | P2[12,13]
+  周转：P0=8, P1=11.6, P2=12 → 平均 = 10.53
+
+SJF：P0 已开始（非抢占），跑完后从已到达中选最短
+  甘特图：P0[0,8] | P2[8,9] | P1[9,13]
+  周转：P0=8, P1=12.6, P2=8 → 平均 = 9.53
+
+Future-knowledge：CPU 空闲 1 单位，等 P1、P2 都到了再选最短
+  甘特图：idle[0,1] | P2[1,2] | P1[2,6] | P0[6,14]
+  周转：P0=14, P1=5.6, P2=1 → 平均 = 6.87</code></pre>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">真题</b>2025 秋第 3 题：同时到达 5 进程，时间片=1</p>
+<pre><code>FCFS（按到达顺序 P0,P1,P2,P3,P4）：
+  P0[0,5] | P1[5,6] | P2[6,8] | P3[8,9] | P4[9,12]
+  周转：5,6,8,9,12 → 平均 = 8
+
+SJF（非抢占，全已到达，按服务时间排序：P1=1,P3=1,P2=2,P4=3,P0=5）：
+  P1[0,1] | P3[1,2] | P2[2,4] | P4[4,7] | P0[7,12]
+  周转：1,2,4,7,12 → 平均 = 5.2
+
+RR（时间片=1，队列 P0,P1,P2,P3,P4 循环）：
+  画甘特图逐片轮流；P1 在第 2 单位完成、P3 在第 4...
+  通常 RR 平均周转 > SJF</code></pre>
+        <p><b>结论</b>：SJF 平均周转最短，但<b>不公平</b>且会导致长作业饥饿，所以实际系统更常用 RR 或多级反馈队列。</p>
+      </div>
+
+      <div class="worked">
+        <p><b class="tag">作业</b>HRRN 高响应比（作业二第 9 题）</p>
+<pre><code>响应比 = (等待时间 + 服务时间) / 服务时间
+
+J1(8:00,2h), J2(8:30,40m), J3(9:00,25m), J4(9:30,30m)
+
+J1 先到先跑 → 10:00 完成
+10:00 时计算等待者响应比：
+  J2: 等90+服40 → 130/40 = 3.25
+  J3: 等60+服25 → 85/25 = 3.40 ← 最高
+  J4: 等30+服30 → 60/30 = 2.00
+选 J3，跑到 10:25
+
+10:25 重算：
+  J2: 等115+服40 → 155/40 = 3.875 ← 最高
+  J4: 等55+服30 → 85/30 = 2.83
+选 J2，跑到 11:05
+
+最后 J4
+
+顺序：J1 → J3 → J2 → J4</code></pre>
+        <p class="pitfall">HRRN 每次调度都要<b>重新</b>计算响应比，不能算一次定终身</p>
+      </div>
+
+      <p class="pitfall"><b>常见失分点</b>：① RR 时间片到期时新到达的进程入队顺序；② SJF 抢占式忘了比剩余时间；③ 算周转时把"服务时间"当"完成时间"；④ HRRN 没动态重算</p>
+    </div>
+  </div>
+
+  <!-- ============ 兜底加分项 ============ -->
+  <h4 style="margin-top:32px;font-size:14px;color:var(--ink);">💡 上 90 分的关键加分点</h4>
+  <div class="detail">
+    <ul>
+      <li><b>段页式翻译</b>（2025 新增）：可能继续出现在 2026 → 复习 <a class="jump" href="#ch5b" style="margin:0;">CH 5+</a></li>
+      <li><b>磁头臂黏着</b>（2024）：SSTF 算法最易产生（局部请求集中时磁头不动）→ 解决：用 SCAN/C-SCAN</li>
+      <li><b>SimpleFS 对比</b>（2025）：实验内容，需看课程实验报告，重点是位图分离 / 索引节点分离的优劣</li>
+      <li><b>缓冲区时间公式</b>：单缓冲 max(C,T)+M；双缓冲 max(C,T+M)；可能选择题或综合题考</li>
+      <li><b>异常分类</b>：中断/陷阱/故障/终止，重点记"缺页是故障，需要重新执行"</li>
+      <li><b>启动盘四步</b>：物理格式化 → 分区 → 逻辑格式化 → 装 OS；扇区在物理格式化，根目录在逻辑格式化</li>
+    </ul>
+  </div>
+
+  <h4 style="margin-top:24px;font-size:14px;color:var(--ink);">📝 考前一天 To-Do</h4>
+  <div class="detail">
+    <ol>
+      <li><b>晚上</b>：把上面五大题各默写一遍（白纸 + 计时）</li>
+      <li><b>检查薄弱</b>：哪道题 &gt; 15 分钟做出来，今晚补练</li>
+      <li><b>速查表 ★★★ 全过一遍</b>：用顶部筛选"仅 ★★★"</li>
+      <li><b>底部公式速查</b>背熟到能闭眼默写</li>
+      <li><b>带计算器</b>（2025 真题允许，确认本场是否允许）</li>
+      <li><b>早睡</b>：脑子比知识量重要</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ CHEATSHEET ============ -->
+<section class="chapter" id="cheat">
+<div class="cheatsheet">
+<h3>★ 核心公式速查（考前 10 分钟）</h3>
+<div class="grid">
+
+<div>
+<h5>调度算法</h5>
+<ul>
+<li>周转 = 完成 − 到达</li>
+<li>带权周转 = 周转 / 服务</li>
+<li>等待 = 周转 − 服务</li>
+<li>响应比 = (等待+服务) / 服务</li>
+<li>CPU 利用率 = CPU 忙 / 总时间</li>
+</ul>
+</div>
+
+<div>
+<h5>死锁判定</h5>
+<ul>
+<li>n 进程每个需 k 资源、共 m 资源</li>
+<li><code>m ≥ n(k−1) + 1</code> → 不死锁</li>
+<li>Need = Max − Allocation</li>
+<li>找安全序列：Need ≤ Available</li>
+</ul>
+</div>
+
+<div>
+<h5>地址翻译</h5>
+<ul>
+<li>页大小 = 2^k → 偏移 k 位</li>
+<li>页号 = LA &gt;&gt; k</li>
+<li>偏移 = LA &amp; (2^k − 1)</li>
+<li>物理地址 = 页框号 × 页大小 + 偏移</li>
+<li>页表项地址 = 基址 + 页号 × 项大小</li>
+</ul>
+</div>
+
+<div>
+<h5>多级页表</h5>
+<ul>
+<li>每级项数 = 页大小 / 项大小</li>
+<li>4KB 页 + 4B 项 → 每级 10 位</li>
+<li>4KB 页 + 8B 项 → 每级 9 位</li>
+</ul>
+</div>
+
+<div>
+<h5>TLB 与缺页</h5>
+<ul>
+<li>命中：TLB + 内存</li>
+<li>未命中：TLB + 页表 + 内存</li>
+<li>缺页：TLB + 页表 + 缺页处理 + 重新执行</li>
+</ul>
+</div>
+
+<div>
+<h5>磁盘</h5>
+<ul>
+<li>容量 = 盘面 × 柱面 × 扇区 × 扇区大小</li>
+<li>访问时间 = 寻道 + 旋转(半圈) + 传输</li>
+<li>7200 RPM → 旋转延迟 4.17ms</li>
+</ul>
+</div>
+
+<div>
+<h5>缓冲区</h5>
+<ul>
+<li>单缓冲：max(C, T) + M</li>
+<li>双缓冲：max(C, T+M)</li>
+</ul>
+</div>
+
+<div>
+<h5>inode 容量（n = 块/指针）</h5>
+<ul>
+<li>直接：直接数 × 块</li>
+<li>一级：n × 块（每个一级项）</li>
+<li>二级：n² × 块</li>
+<li>三级：n³ × 块</li>
+<li>I/O 次数 = 索引层数 + 1</li>
+</ul>
+</div>
+
+<div>
+<h5>信号量</h5>
+<ul>
+<li>互斥：初值 1，P/V 同进程</li>
+<li>同步：初值 0，P/V 跨进程</li>
+<li>资源池：初值 = 资源数</li>
+<li>S&gt;0：可用数；S&lt;0：|S| 等待数</li>
+</ul>
+</div>
+
+<div>
+<h5>启动顺序</h5>
+<ul>
+<li>引导：ROM → MBR → 分区 → OS</li>
+<li>制盘：物理格式化 → 分区 → 逻辑格式化 → 装 OS</li>
+<li>扇区划分 ← 物理格式化</li>
+<li>根目录建立 ← 逻辑格式化</li>
+</ul>
+</div>
+
+<div>
+<h5>异常分类</h5>
+<ul>
+<li>中断：异步、外部</li>
+<li>陷阱：同步、故意（系统调用）</li>
+<li>故障：同步、可恢复（缺页）</li>
+<li>终止：同步、不可恢复</li>
+</ul>
+</div>
+
+<div>
+<h5>分段 / 段页式</h5>
+<ul>
+<li>分段：物理 = 基址 + 偏移（先检查越界）</li>
+<li>段页式：(s,p,d) → 段表 → 页表 → 物理</li>
+<li>段页式访存 3 次（需 TLB）</li>
+<li>段共享易：段是逻辑单位</li>
+</ul>
+</div>
+
+<div>
+<h5>现代处理器</h5>
+<ul>
+<li>5 段流水线：IF/ID/EX/MEM/WB</li>
+<li>三冒险：结构、数据、控制</li>
+<li>分支预测错 → 流水线清空</li>
+<li>缓存友好：行主序、步长 1</li>
+<li>局部性：时间 + 空间</li>
+</ul>
+</div>
+
+</div>
+</div>
+</section>
+
+</main>
+</div>
+
+<script>
+// ========== 筛选 ==========
+const btns = document.querySelectorAll('.filter-btn');
+const rows = document.querySelectorAll('table.kt tbody tr');
+
+btns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    btns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    rows.forEach(row => {
+      const imp = row.dataset.imp;
+      if (!imp) return;
+      if (filter === 'all') {
+        row.classList.remove('hidden');
+      } else if (filter === '3') {
+        row.classList.toggle('hidden', imp !== '3');
+      } else if (filter === '2') {
+        row.classList.toggle('hidden', imp === '1');
+      } else if (filter === 'calc') {
+        const hasCalc = row.querySelector('a.calc');
+        row.classList.toggle('hidden', !hasCalc);
+      }
+    });
+  });
+});
+
+// ========== 侧边栏折叠 ==========
+document.getElementById('toggleSidebar').addEventListener('click', () => {
+  document.getElementById('layout').classList.toggle('collapsed');
+});
+
+// ========== Scrollspy: 高亮当前章节 ==========
+const sections = document.querySelectorAll('section.chapter');
+const navLinks = document.querySelectorAll('aside nav a');
+const linkMap = {};
+navLinks.forEach(link => {
+  const id = link.getAttribute('href').slice(1);
+  linkMap[id] = link;
+});
+
+function updateActive() {
+  let currentId = null;
+  const scrollPos = window.scrollY + 100;  // 触发点向下 100px
+  sections.forEach(sec => {
+    if (sec.offsetTop <= scrollPos) {
+      currentId = sec.id;
+    }
+  });
+  navLinks.forEach(link => link.classList.remove('active'));
+  if (currentId && linkMap[currentId]) {
+    linkMap[currentId].classList.add('active');
+  }
+}
+
+window.addEventListener('scroll', updateActive, { passive: true });
+window.addEventListener('load', updateActive);
+updateActive();
+</script>
+</body>
+</html>

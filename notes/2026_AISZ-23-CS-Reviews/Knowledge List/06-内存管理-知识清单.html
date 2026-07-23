@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第六章：内存管理</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第六章：内存管理</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s45703049">1. 背景：程序如何进入内存</a></li>
+  <li><a href="#s45828246">1.1 从源程序到进程 必考</a></li>
+  <li><a href="#s67715042">1.2 重定位的三个时机 必考</a></li>
+  <li><a href="#s80551980">1.3 三类地址概念 重点</a></li>
+  <li><a href="#s14423638">1.4 进程交换（Swap） 常考</a></li>
+<li><a href="#s47957182">2. 连续内存分配</a></li>
+  <li><a href="#s22380480">2.1 固定等长分区 了解</a></li>
+  <li><a href="#s63006987">2.2 固定变长分区 了解</a></li>
+  <li><a href="#s72969038">2.3 可变分区 重点</a></li>
+  <li><a href="#s74141616">2.4 分区分配算法 必考</a></li>
+  <li><a href="#s18140452">2.5 碎片问题 必考</a></li>
+<li><a href="#s87592794">3. 分段内存管理（Segmentation）</a></li>
+  <li><a href="#s66980247">3.1 分段思想 重点</a></li>
+  <li><a href="#s60909671">3.2 段表与地址翻译 必考</a></li>
+  <li><a href="#s61855297">3.3 分段的优缺点 重点</a></li>
+<li><a href="#s86550779">4. 分页内存管理（Paging）</a></li>
+  <li><a href="#s75630127">4.1 分页思想 必考</a></li>
+  <li><a href="#s12725932">4.2 页表与地址翻译 必考</a></li>
+  <li><a href="#s14753836">4.3 多级页表 必考</a></li>
+  <li><a href="#s74004533">4.4 TLB（Translation Look-aside Buffer） 必考</a></li>
+  <li><a href="#s37817733">4.5 分页的优缺点 重点</a></li>
+<li><a href="#s18879560">5. 段页结合内存管理</a></li>
+  <li><a href="#s33006036">5.1 段页结合思想 重点</a></li>
+  <li><a href="#s53149803">5.2 Intel x86 内存管理 常考</a></li>
+  <li><a href="#s40392240">5.3 段页结合地址翻译步骤 必考</a></li>
+  <li><a href="#s70358442">5.4 内存管理三核心词 必考</a></li>
+</ul>
+</div>
+
+<h2 id="s45703049">1. 背景：程序如何进入内存</h2>
+
+<h3 id="s45828246">1.1 从源程序到进程 <span class="tag-must">必考</span></h3>
+<p>程序执行需要经历三个阶段：</p>
+<ul>
+  <li><span class="kp">编译</span>：源代码 --> 汇编/目标文件，产生<span class="exp">逻辑地址（从0开始编址）</span></li>
+  <li><span class="kp">链接</span>：合并各目标文件的段，统一分配地址，解析符号引用（静态链接/动态链接）</li>
+  <li><span class="kp">装入（加载）</span>：loader 将可执行文件装入内存，建立进程地址空间</li>
+</ul>
+
+<h3 id="s67715042">1.2 重定位的三个时机 <span class="tag-must">必考</span></h3>
+<ul>
+  <li><span class="kp">编译/链接时重定位</span>：产生<span class="exp">绝对代码</span>，只能放在预先确定的位置，不可移动</li>
+  <li><span class="kp">载入时重定位</span>：装载时修改地址，一旦载入<span class="exp">不能再移动</span></li>
+  <li><span class="kp">运行时重定位</span>（最常见）：每次访存时由硬件（MMU）动态翻译，支持移动和保护</li>
+</ul>
+<blockquote>易错：运行时重定位不是"运行前修改代码"，而是每条访存指令执行时由MMU硬件实时完成地址翻译。</blockquote>
+
+<h3 id="s80551980">1.3 三类地址概念 <span class="tag-key">重点</span></h3>
+<ul>
+  <li><span class="kp">逻辑地址（虚拟地址）</span>：程序中使用的地址，从0编址，是段内相对地址</li>
+  <li><span class="kp">线性地址</span>：段基址 + 逻辑偏移，CPU地址总线可访问的全部地址集合</li>
+  <li><span class="kp">物理地址</span>：实际物理内存单元的编号，以Byte为单位</li>
+  <li><span class="kp">MMU</span>（Memory Management Unit）：CPU中实现逻辑地址 --> 物理地址映射的硬件电路</li>
+</ul>
+
+<h3 id="s14423638">1.4 进程交换（Swap） <span class="tag-freq">常考</span></h3>
+<p>将<span class="kp">阻塞/睡眠进程</span>换出到磁盘，释放内存给其他进程；需要时再换入。</p>
+<p>交换要求程序是<span class="exp">可重定位</span>的（运行时重定位支持换入后放在不同位置）。</p>
+
+<hr>
+<h2 id="s47957182">2. 连续内存分配</h2>
+
+<h3 id="s22380480">2.1 固定等长分区 <span class="tag-info">了解</span></h3>
+<p>初始化时将内存等分为 k 个分区，大小相同（SecSize）。</p>
+<ul>
+  <li>优点：算法简单，分配快</li>
+  <li>缺点：产生大量<span class="kp">内部碎片</span>（分配了但未使用的空间）</li>
+</ul>
+
+<h3 id="s63006987">2.2 固定变长分区 <span class="tag-info">了解</span></h3>
+<p>初始化时分成 k 个大小不同的分区，进程选最小满足需求的分区。</p>
+<ul>
+  <li>仍有内部碎片，灵活性略优于等长分区</li>
+</ul>
+
+<h3 id="s72969038">2.3 可变分区 <span class="tag-key">重点</span></h3>
+<p>根据 reqSize 动态分割内存，数据结构维护<span class="kp">空闲分区表</span>和<span class="kp">已分配分区表</span>。</p>
+<p>reqSize = code + data + stack + heap（stack/heap 需预留空间）</p>
+
+<h3 id="s74141616">2.4 分区分配算法 <span class="tag-must">必考</span></h3>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>算法</th><th>策略</th><th>特点</th></tr>
+  <tr><td><span class="kp">首次适配（First-Fit）</span></td><td>找到第一个满足的空闲分区</td><td>速度快；大分区在前易被切割</td></tr>
+  <tr><td><span class="kp">最佳适配（Best-Fit）</span></td><td>找最小的满足需求的分区</td><td>搜索整个表，慢；产生大量小碎片</td></tr>
+  <tr><td><span class="kp">最差适配（Worst-Fit）</span></td><td>找最大的空闲分区</td><td>搜索整个表，慢；剩余分区较大</td></tr>
+</table>
+
+<h3 id="s18140452">2.5 碎片问题 <span class="tag-must">必考</span></h3>
+<ul>
+  <li><span class="kp">外部碎片</span>：空闲空间总量足够但不连续，无法分配给大进程</li>
+  <li><span class="kp">内部碎片</span>：分区已分配但内部有未使用空间（固定分区产生）</li>
+  <li><span class="kp">内存紧缩（Compaction）</span>：移动进程，合并外部碎片；时间成本极高（1GB@4B/20ns ≈ 5秒）</li>
+</ul>
+<blockquote>易错：外部碎片是可变分区的问题，内部碎片是固定分区的问题；两者不要混淆。</blockquote>
+
+<hr>
+<h2 id="s87592794">3. 分段内存管理（Segmentation）</h2>
+
+<h3 id="s66980247">3.1 分段思想 <span class="tag-key">重点</span></h3>
+<p>程序员视角：程序由若干<span class="kp">段</span>组成（主程序段、数据段、栈段、堆段、库段等），每段从0编址。</p>
+<p>地址格式：<span class="kp">&lt;段号, 段内偏移&gt;</span></p>
+<p>分段将二维地址空间映射到一维物理内存，各段可分散存放。</p>
+
+<h3 id="s60909671">3.2 段表与地址翻译 <span class="tag-must">必考</span></h3>
+<p>每个进程维护一张<span class="kp">段表</span>，每条记录包含：段号、基址、长度、保护位。</p>
+<p>地址翻译：物理地址 = 段表[段号].基址 + 段内偏移</p>
+<p>需检查：偏移 &lt; 段长度（越界检查）；权限检查（读/写/执行）</p>
+<p>段号 S 和偏移 O 的计算：S = INT[A/L]，O = A % L（A为逻辑地址，L为段大小）</p>
+
+<h3 id="s61855297">3.3 分段的优缺点 <span class="tag-key">重点</span></h3>
+<ul>
+  <li>优点：符合程序员习惯；各段独立编址，便于保护和共享</li>
+  <li>缺点：产生<span class="kp">外部碎片</span>；空间预留问题；内存紧缩代价高</li>
+</ul>
+
+<hr>
+<h2 id="s86550779">4. 分页内存管理（Paging）</h2>
+
+<h3 id="s75630127">4.1 分页思想 <span class="tag-must">必考</span></h3>
+<p>将逻辑地址空间和物理内存都切割成大小相等的片：</p>
+<ul>
+  <li><span class="kp">页（Page）</span>：逻辑地址空间的固定大小块，典型大小 4KB</li>
+  <li><span class="kp">页框/页帧（Frame）</span>：物理内存的固定大小块，与页等大</li>
+</ul>
+<p>优点：<span class="exp">无外部碎片</span>（页框大小固定，物理内存分配不会产生碎片）；内部碎片最多一页大小。</p>
+<blockquote>易错：分页消除了外部碎片，但仍有内部碎片（最后一页可能未填满）。</blockquote>
+
+<h3 id="s12725932">4.2 页表与地址翻译 <span class="tag-must">必考</span></h3>
+<p>逻辑地址格式：<span class="kp">[页号 | 页内偏移]</span>（页内偏移位数 = log₂(页大小)）</p>
+<p>地址翻译：物理地址 = 页表[页号].页框号 × 页大小 + 页内偏移</p>
+<p>页表项（PTE）结构：页框号（ppn）、有效位（valid）、保护位（R/W/X）、修改位（dirty）、访问位（accessed）</p>
+<p>翻译示例：逻辑地址 0x240，页大小 4K，页号=0，偏移=0x240；查页表得页框号5，物理地址=0x5240</p>
+
+<h3 id="s14753836">4.3 多级页表 <span class="tag-must">必考</span></h3>
+<p>问题：32位地址 + 4KB页 = 2²⁰个页表项，每进程需 4MB 页表，10进程需 40MB。</p>
+<p>解决：引入<span class="kp">多级页表</span>，顶层页目录常驻内存，未使用的逻辑地址不建立页表项。</p>
+<p>32位两级页表地址格式：[页目录号(10位) | 页号(10位) | 页内偏移(12位)]</p>
+<p>访存次数：1级页表需2次，2级需3次，n级需n+1次访存。</p>
+<p>示例（代码+数据+栈各4M，共12M）：页目录 1 页(4K) + 3个页表各 1 页(4K) = 4K+12K = 16K</p>
+<blockquote>易错：多级页表节省的是页表本身占用的内存空间，而非访存次数——访存次数反而增多了。</blockquote>
+
+<h3 id="s74004533">4.4 TLB（Translation Look-aside Buffer） <span class="tag-must">必考</span></h3>
+<p><span class="kp">TLB</span> 是一组关联快速寄存器（硬件缓存），缓存最近使用的页表项，避免每次都访问内存中的页表。</p>
+<p>有效访问时间（EAT）公式：</p>
+<p>EAT = HitRate × (TLB时间 + 1次内存访问) + (1-HitRate) × (TLB时间 + 2次内存访问)</p>
+<p>示例：TLB=20ns，内存=100ns</p>
+<ul>
+  <li>命中率80%：EAT = 0.8×120 + 0.2×220 = 140ns</li>
+  <li>命中率98%：EAT = 0.98×120 + 0.02×220 = 122ns</li>
+</ul>
+<p>TLB 容量通常 64~1024 条，命中率高的原因：程序访存具有<span class="kp">局部性</span>（时间局部性+空间局部性）。</p>
+<p>进程切换时 TLB 需要 flush（或使用 ASID 标记避免 flush）。</p>
+
+<h3 id="s37817733">4.5 分页的优缺点 <span class="tag-key">重点</span></h3>
+<ul>
+  <li>优点：靠近硬件，高效利用内存，无外部碎片，易于自动化（硬件实现）</li>
+  <li>缺点：不符合程序员思考习惯；页表本身占用内存</li>
+</ul>
+
+<hr>
+<h2 id="s18879560">5. 段页结合内存管理</h2>
+
+<h3 id="s33006036">5.1 段页结合思想 <span class="tag-key">重点</span></h3>
+<p>让<span class="kp">段面向用户</span>（便于编程、保护、共享），让<span class="kp">页面向硬件</span>（消除外部碎片，高效分配）。</p>
+<p>地址翻译流程：逻辑地址 --> 段表（得线性地址）--> 页表（得物理地址）</p>
+
+<h3 id="s53149803">5.2 Intel x86 内存管理 <span class="tag-freq">常考</span></h3>
+<ul>
+  <li><span class="kp">实模式</span>：地址空间1MB，段寄存器存放段基址，逻辑地址=物理地址；物理地址=段寄存器×16+偏移</li>
+  <li><span class="kp">保护模式</span>：地址空间4GB，段寄存器存放<span class="exp">段选择符（索引GDT/LDT）</span>，支持段页式管理</li>
+  <li><span class="kp">GDT</span>：全局段描述符表，系统启动时由内核生成，全局共享</li>
+  <li><span class="kp">LDT</span>：局部段描述符表，进程加载时创建，各进程独有</li>
+  <li><span class="kp">CR3寄存器</span>：保存当前进程页目录表的物理地址，进程切换时更新</li>
+</ul>
+
+<h3 id="s40392240">5.3 段页结合地址翻译步骤 <span class="tag-must">必考</span></h3>
+<ol>
+  <li>用段选择符查 GDT/LDT 得到段描述符（基址、限长、权限）</li>
+  <li>基址 + 逻辑偏移 --> 线性地址，进行越界和权限检查</li>
+  <li>用线性地址的高位查页目录，再查页表，得物理页框号</li>
+  <li>物理页框号 + 页内偏移 --> 物理地址</li>
+</ol>
+<p>完整过程需查段表+页目录+页表，效率低；TLB 缓存可大幅提升性能。</p>
+
+<h3 id="s70358442">5.4 内存管理三核心词 <span class="tag-must">必考</span></h3>
+<p><span class="kp">翻译</span>（逻辑地址 --> 物理地址）、<span class="kp">保护</span>（越界检查、权限检查）、<span class="kp">内存分配</span>（如何管理空闲空间）</p>
+
+
+
+</body>
+</html>

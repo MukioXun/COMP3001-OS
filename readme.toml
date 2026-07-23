@@ -44,6 +44,17 @@ content = """
 """
 
 [[sections]]
+title = "学习资料"
+
+[[sections.items]]
+content = """
+- [2026 年 AISZ-23 复习资料总览](notes/2026_AISZ-23-CS-Reviews/index.html)：复习速查表、九章知识清单和交互式章节测试
+- `assignments/2026_AISZ-23-CS-Reviews/`：四次课后作业及参考答案；也可从上述总览直接打开
+- HTML 可直接用浏览器打开；部分公式由 MathJax 渲染，首次加载需要联网
+- 资料来源：[MukioXun/AISZ-23-CS-Review-Materials](https://github.com/MukioXun/AISZ-23-CS-Review-Materials)
+"""
+
+[[sections]]
 title = "关于考试"
 
 [[sections.items]]

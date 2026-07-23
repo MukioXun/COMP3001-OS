@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第七章：虚拟内存</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第七章：虚拟内存</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "关于虚拟内存的说法，错误的是：", "options": ["每个进程独享一个大的线性地址空间", "虚拟内存允许程序大小超过物理内存", "虚拟内存基于程序局部性原理", "虚拟内存要求所有页必须预先加载到内存"], "answer": 3, "knowledge_point": "虚拟内存概念", "diagnosis_hint": "混淆了按需调页与预加载", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：虚拟内存的核心特性之一就是按需调页（请求调页）——只有当进程真正访问某页时才将其调入内存，未访问的页（如异常处理代码）可能始终不被调入。选项D所说的「必须预先加载所有页」正是虚拟内存要解决的传统问题，因此D是错误说法。", "pitfall": "虚拟内存与预先全部加载是对立的概念，不要混淆。"}, {"type": "choice", "points": 2, "question": "当发生缺页中断时，处理完成后CPU应该：", "options": ["继续执行缺页指令的下一条指令", "重新执行引发缺页的那条指令", "跳转到缺页中断返回地址", "终止当前进程"], "answer": 1, "knowledge_point": "缺页中断处理", "diagnosis_hint": "不清楚缺页中断与普通中断的区别", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：缺页中断处理完成后，必须重新执行（restart）引发缺页的那条指令，而不是执行下一条。原因是那条指令在缺页发生时尚未完成（数据还不在内存），需要重新取指并执行。这需要硬件支持保存 EPC（异常程序计数器）指向缺页指令本身。", "pitfall": "缺页中断后是 restart（重新执行），不是 return（继续下一条）。"}, {"type": "choice", "points": 2, "question": "FIFO页面置换算法可能出现 Belady 异常，这意味着：", "options": ["增加物理帧数，缺页次数反而增多", "减少物理帧数，缺页次数反而减少", "FIFO 算法效率高于 LRU", "FIFO 算法是栈式算法"], "answer": 0, "knowledge_point": "Belady异常", "diagnosis_hint": "不理解Belady异常的定义", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：Belady 异常是指对某些置换算法（如 FIFO），增加分配的帧数时缺页次数反而增加的异常现象。经典例子：引用序列 1,2,3,4,1,2,5,1,2,3,4,5，FIFO 3帧产生9次缺页，4帧产生10次缺页。栈式算法（LRU、OPT）不会出现此异常。", "pitfall": "Belady异常是「帧增多，缺页反而增多」，方向不要搞反。"}, {"type": "choice", "points": 2, "question": "在以下页面置换算法中，哪个算法理论最优但实际不可实现？", "options": ["FIFO", "LRU", "OPT", "Clock"], "answer": 2, "knowledge_point": "OPT置换算法", "diagnosis_hint": "混淆LRU与OPT的可实现性", "explanation": "<strong>正确答案</strong>：C（OPT）<br><br><strong>推理过程</strong>：OPT（最优页面置换）淘汰未来最远才会使用的页，产生缺页数最少，理论上是最优算法。但它需要预知未来的页面访问序列，在实际中无法实现，只用作评价其他算法的基准。LRU 是 OPT 的可实现近似（用过去预测未来）。", "pitfall": "OPT最优但不可实现，LRU可实现但代价大，Clock是LRU的高效近似。"}, {"type": "choice", "points": 2, "question": "Clock（时钟）置换算法中，当扫描到某帧的引用位 R=1 时，应：", "options": ["立即淘汰该页", "将 R 清0，继续扫描下一帧", "将 R 置1，继续扫描下一帧", "停止扫描，等待下次缺页"], "answer": 1, "knowledge_point": "Clock置换算法", "diagnosis_hint": "不熟悉Clock算法的扫描逻辑", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：Clock（二次机会算法）的规则：扫描循环队列时，若当前帧 R=1，说明最近被使用过，给它一次机会，将 R 清0后继续扫描下一帧；若 R=0，说明最近未被使用，淘汰该页并将其替换。这样给了「最近使用过的页」第二次留在内存的机会。", "pitfall": "Clock：R=1→清0继续；R=0→淘汰。不要搞反操作方向。"}, {"type": "choice", "points": 2, "question": "以下关于 LRU 算法的说法正确的是：", "options": ["LRU 算法是栈式算法，不会出现 Belady 异常", "LRU 算法实现简单，现代OS广泛直接使用", "LRU 算法需要预知未来访问序列", "LRU 算法的性能通常劣于 FIFO"], "answer": 0, "knowledge_point": "LRU置换算法", "diagnosis_hint": "不了解栈式算法的性质", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：LRU 满足栈式算法性质：M(m,r) ⊆ M(m+1,r)，即 m 帧时内存中的页是 m+1 帧时的子集，因此增加帧数不会导致缺页增多（不会出现 Belady 异常）。B错——LRU 精确实现代价很大（计数器或栈），实际OS使用近似的 Clock 算法。C错——预知未来是 OPT 的特点。D错——LRU 性能通常优于 FIFO。", "pitfall": "栈式算法 = 不会出现 Belady 异常，LRU 和 OPT 都是栈式算法，FIFO 不是。"}, {"type": "choice", "points": 2, "question": "系统发生颠簸（Thrashing）的根本原因是：", "options": ["CPU 调度算法选择不当", "所有进程对内存的总需求超过了物理内存", "使用了 FIFO 置换算法", "页面大小设置过小"], "answer": 1, "knowledge_point": "颠簸", "diagnosis_hint": "混淆颠簸原因与表现", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：颠簸的根本原因是系统中所有活跃进程的工作集之和超过了物理内存容量。OS 为提升 CPU 利用率不断调入更多进程，导致每个进程分配的帧数不够，缺页率极高，CPU 大部分时间用于处理缺页而非执行指令，CPU 利用率骤降，形成恶性循环。置换算法选择不当可以加剧颠簸但不是根本原因。", "pitfall": "颠簸是系统级问题（内存总需求 > 总供给），任何置换算法都无法从根本上解决颠簸。"}, {"type": "choice", "points": 2, "question": "写时复制（Copy-on-Write）技术中，fork() 创建子进程后，父子进程：", "options": ["立即各自拥有独立的物理内存副本", "共享所有物理页，且页表项标记为只读", "子进程所有页均触发缺页中断后才能运行", "父进程的页面被标记为只读，子进程页面可读写"], "answer": 1, "knowledge_point": "写时复制CoW", "diagnosis_hint": "不清楚CoW的初始状态", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：CoW 的核心：fork() 时父子进程共享同一份物理页，二者的页表项都指向相同物理页框，但都标记为只读。当任意进程尝试写入时，触发保护故障，内核此时才复制该页，各自拥有独立副本后完成写操作。这样延迟拷贝（甚至永远不需要复制），大幅加速进程创建。", "pitfall": "CoW 初始状态：共享 + 只读。写操作才触发复制，不是 fork() 时立即复制。"}, {"type": "choice", "points": 2, "question": "在 Core i7 的四级页表中，48 位虚拟地址被分解为：", "options": ["4×9位页表索引 + 12位页内偏移", "4×10位页表索引 + 8位页内偏移", "3×10位页表索引 + 12位页内偏移", "4×12位页表索引 + 0位偏移"], "answer": 0, "knowledge_point": "Core i7四级页表", "diagnosis_hint": "不记得Core i7地址分解格式", "explanation": "<strong>正确答案</strong>：A<br><br><strong>推理过程</strong>：Core i7 使用 48 位虚拟地址，分解为 VPN1(9位) | VPN2(9位) | VPN3(9位) | VPN4(9位) | VPO(12位)，共 9×4+12=48 位。每个页表有 2^9=512 个条目，每条 8 字节，页表大小恰好为 4KB（一页）。每级覆盖范围：L1=512GB，L2=1GB，L3=2MB，L4=4KB。", "pitfall": "48位 = 4×9位VPN + 12位偏移，不是 4×10 或 3×10。"}, {"type": "choice", "points": 2, "question": "TLB（快表）的主要作用是：", "options": ["扩大虚拟地址空间", "加速虚拟地址到物理地址的翻译", "存储换出到磁盘的页面信息", "管理进程的工作集"], "answer": 1, "knowledge_point": "TLB", "diagnosis_hint": "混淆TLB与其他内存管理结构的作用", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：TLB（Translation Lookaside Buffer，快表）是页表的硬件缓存，存储最近使用的虚拟页号到物理帧号的映射。访问内存时先查 TLB，命中则直接得到物理地址（无需访问内存中的页表），未命中才访问多级页表。TLB 极大减少了地址翻译的时间开销，是虚拟内存高效工作的关键。", "pitfall": "TLB 是页表的缓存，作用是加速地址翻译，与虚拟地址空间大小无关。"}, {"type": "tf", "points": 1, "question": "请求调页（按需调页）要求程序在开始执行前将所有页面全部加载到内存中。", "options": [], "answer": false, "knowledge_point": "按需调页", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：请求调页的核心恰恰是「惰性」——只有当进程真正访问某页时才将其调入，无需预先加载所有页。这正是按需调页（Demand Paging）相对于早期「必须全部装入」的进步所在。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "页面置换时，若被淘汰页面的修改位（Dirty bit）D=0，则不需要将其写回磁盘。", "options": [], "answer": true, "knowledge_point": "页表项修改位", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：修改位 D（Dirty bit）由 MMU 在写操作时置1。D=0 说明该页自被调入内存以来未被修改，其内容与磁盘上的副本完全一致，换出时无需写回，直接丢弃即可，节省一次磁盘写操作。D=1 则必须写回以保证数据不丢失。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "LRU 页面置换算法可能出现 Belady 异常（增加帧数时缺页次数反而增多）。", "options": [], "answer": false, "knowledge_point": "Belady异常", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：LRU 是栈式算法（Stack Algorithm），满足性质 M(m,r) ⊆ M(m+1,r)——m 帧时内存中的页集合是 m+1 帧时的子集。栈式算法不会出现 Belady 异常。FIFO 不是栈式算法，因此可能出现 Belady 异常。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "颠簸（Thrashing）的恶性循环是：CPU利用率低 → OS增加并发进程 → 内存争用更激烈 → 缺页率升高 → CPU利用率更低。", "options": [], "answer": true, "knowledge_point": "颠簸", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：这正是颠簸的恶性循环路径。OS 监测到 CPU 利用率低时，误以为可以增加进程来提升利用率，实际上是内存中进程过多、每个进程分配的帧不足导致频繁缺页，进程大部分时间阻塞等待调页，CPU 利用率反而更低，形成正反馈恶性循环。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "写时复制（CoW）技术中，fork() 后子进程对共享页面执行读操作时，会触发页面复制。", "options": [], "answer": false, "knowledge_point": "写时复制CoW", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：CoW 只在写操作时触发复制。读操作完全不会导致复制——父子进程可以同时读取共享的物理页，不会有任何问题，也不会触发保护故障。只有当某个进程尝试写入共享页时，才触发保护故障，内核随后复制该页。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "全局页面置换策略允许一个进程淘汰其他进程的页面，可能造成对某进程不公平。", "options": [], "answer": true, "knowledge_point": "全局置换与局部置换", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：全局置换策略中，进程可以从所有进程的页面中选择淘汰目标。一个频繁缺页的进程会不断淘汰其他进程的页面，导致那些进程缺页率升高，产生不公平现象。局部置换只能淘汰自己的页面，公平但不能利用全局空闲帧。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "TLB（快表）通常采用全相联或组相联映射，因为TLB对缺失的容忍度极低。", "options": [], "answer": true, "knowledge_point": "TLB组织", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：每次 TLB 缺失都需要额外访问内存中的页表（可能是多级），代价很高。因此 TLB 宁愿增加硬件复杂度和延迟，也要尽量避免缺失，所以采用全相联（无冲突，最小化缺失率）或高路数组相联。TLB 容量虽小（64~1024条），但命中率要求极高（通常>99%）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在 Cache 的直接映射（Direct Mapped，E=1）中，每个内存块只能映射到一个固定的 Cache 组，冲突率最高。", "options": [], "answer": true, "knowledge_point": "Cache组织", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：直接映射中 E=1，每个 Cache 组只有一行，内存中地址取模后映射到同一组的块只能相互替换，因此冲突率（conflict miss）最高。例如两个频繁交替访问的块映射到同一组，每次访问都会发生缺失（抖动问题 thrashing in cache）。组相联（E>1）通过增加每组的行数来降低冲突率。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "Linux 中通过 mmap 映射的匿名文件（如堆、栈），在第一次引用时会分配充满随机数据的物理页。", "options": [], "answer": false, "knowledge_point": "Linux虚拟内存管理", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：Linux 的匿名文件映射（堆、栈、.bss段）在第一次引用时分配的是「全零页」（zero-initialized page），不是随机数据。这保证了程序的安全性（防止读取其他进程的残留数据）和符合 C 标准（全局变量初始为零）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "工作集（Working Set）模型可以有效防止颠簸，方法是确保每个进程分配的帧数不少于其工作集大小。", "options": [], "answer": true, "knowledge_point": "工作集与颠簸", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：工作集 W(t,Δ) 是进程在过去 Δ 次访问中引用的不同页面集合，近似表示程序在当前阶段所需的最小内存。若系统保证每个进程的分配帧数 ≥ 其工作集大小，进程就不会因频繁缺页而阻塞。当所有进程工作集之和超过物理内存时，需挂起部分进程，而非强行运行导致颠簸。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述缺页中断（Page Fault）的完整处理流程（6步）。", "options": [], "answer": "", "knowledge_point": "缺页中断处理", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①CPU 发出访存指令，MMU 查页表，发现目标页的有效位 P=0（页不在内存中）；<br>②MMU 产生缺页中断，CPU 陷入内核，转交缺页中断处理程序；<br>③中断处理程序通过页表项中存储的磁盘地址，找到缺失页在磁盘（swap区）上的位置；<br>④在物理内存中选一个空闲页框（若无空闲则先按置换算法选一个受害页换出，若受害页 D=1 需写回磁盘）；<br>⑤将磁盘上的缺失页数据读入选定的页框，更新页表项（P=1，填入新物理帧号）；<br>⑥<strong>重新执行</strong>（而非继续执行）引发缺页的那条指令，此次能正常完成地址翻译。<br><br><em>关键点：第6步必须是「重新执行」，硬件需要保存 EPC 指向缺页指令本身。</em>", "pitfall": ""}, {"type": "short", "points": 6, "question": "给定一个 TLB 命中时间为 2ns，内存访问时间为 100ns，TLB 命中率为 95%，计算有效内存访问时间（EAT）。", "options": [], "answer": "", "knowledge_point": "TLB EAT计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>TLB 命中时（概率 0.95）：访问 TLB(2ns) + 访问物理内存(100ns) = 102ns<br>TLB 未命中时（概率 0.05）：访问 TLB(2ns) + 访问页表（内存，100ns）+ 访问物理内存(100ns) = 202ns<br><br>EAT = 0.95 × 102 + 0.05 × 202<br>= 96.9 + 10.1<br><strong>= 107ns</strong><br><br>若不考虑 TLB 访问时间（简化版）：EAT = 0.95×100 + 0.05×200 = 95+10 = 105ns", "pitfall": ""}, {"type": "short", "points": 6, "question": "比较 FIFO、OPT、LRU 三种页面置换算法，对引用序列 A B C A B D A D B C B（3帧）分别计算缺页次数，并说明哪个算法最优、哪个不可实现。", "options": [], "answer": "", "knowledge_point": "页面置换算法比较", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>FIFO（3帧）</strong>：按调入顺序淘汰最早的页。<br>A(缺,{A})→B(缺,{A,B})→C(缺,{A,B,C})→A(命中)→B(命中)→D(缺,淘汰A,{B,C,D})→A(缺,淘汰B,{C,D,A})→D(命中)→B(缺,淘汰C,{D,A,B})→C(缺,淘汰D,{A,B,C})→B(命中)<br>缺页次数：<strong>7次</strong><br><br><strong>OPT（3帧）</strong>：淘汰未来最远使用的页。<br>A→B→C(3次缺页)→A(命中)→B(命中)→D(缺,淘汰C因C最远,{A,B,D})→A(命中)→D(命中)→B(命中)→C(缺,淘汰D,{A,B,C})→B(命中)<br>缺页次数：<strong>5次（最少）</strong>，但需预知未来，<strong>实际不可实现</strong>。<br><br><strong>LRU（3帧）</strong>：淘汰最近最长未用的页。<br>A→B→C(3次缺页)→A(命中)→B(命中)→D(缺,淘汰C因C最久未用,{A,B,D})→A(命中)→D(命中)→B(命中)→C(缺,淘汰A,{B,D,C})→B(命中)<br>缺页次数：<strong>5次</strong>，是 OPT 的可实现近似。", "pitfall": ""}, {"type": "short", "points": 6, "question": "在 Linux 虚拟内存管理中，什么是 VMA（vm_area_struct）？fork() 和 execve() 分别如何处理进程的虚拟内存？", "options": [], "answer": "", "knowledge_point": "Linux虚拟内存管理", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>VMA</strong>：vm_area_struct 描述进程虚拟地址空间中一段连续的、具有相同属性的区域，包含 vm_start（起始地址）、vm_end（结束地址）、vm_prot（读写执行权限）、vm_flags（私有/共享等标志）、vm_file（映射的文件对象，匿名映射为NULL）等字段。进程的完整虚拟地址空间由一组 VMA 组成。<br><br><strong>fork()</strong>：创建子进程时，内核复制父进程的所有 VMA 结构，并将父子进程所有页的页表项都标记为只读（CoW标志）。两个进程共享所有物理页，写操作时才按需复制页面，加速了进程创建。<br><br><strong>execve()</strong>：加载新程序时，①删除当前进程的所有用户区 VMA；②为新程序创建新 VMA（代码/数据段映射到可执行文件，bss/栈映射到匿名文件）；③设置 PC 指向新程序入口点。新程序的页面按需调入，不立即加载。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "详细论述 Clock（时钟）算法如何近似实现 LRU 置换，包括：①简单Clock的工作原理；②改进型Clock（4状态）如何结合修改位 M 进一步优化置换决策；③与精确 LRU 相比的优缺点。", "options": [], "answer": "", "knowledge_point": "Clock置换算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① 简单Clock（二次机会算法，SCR）工作原理：</strong><br>所有内存帧组成一个循环队列，每帧维护一个引用位 R（由硬件在访问时自动置1，软件可清0）。发生缺页时，从指针位置开始扫描：若当前帧 R=1，说明最近被用过，给一次机会——将 R 清0，指针前进继续扫描；若 R=0，说明最近未被使用，淘汰该帧，指针前进到下一位置。最坏情况下扫描一圈，将所有 R 清0后在起点淘汰。<br><br><strong>② 改进型Clock（4状态）：</strong><br>结合访问位 A 和修改位 M（Dirty bit），形成4种状态：(A=0,M=0)最优先淘汰（未用未修改，无需写回）→ (A=0,M=1)次优（未用但修改，需写回）→ (A=1,M=0)再次（最近用过，未修改）→ (A=1,M=1)最后淘汰（最近用过且已修改）。每轮扫描优先寻找当前最佳类别，找到则淘汰，否则升级到下一类别继续，并在过程中清除 A 位。这样最大化了避免磁盘写操作的机会。<br><br><strong>③ 与精确LRU的比较：</strong><br>优点：实现高效，只需维护1~2个位，无需排序或维护页码栈，扫描代价 O(n)；广泛用于真实OS（Linux、Windows等），实际工作负载下性能接近精确LRU。缺点：不是精确LRU，只能区分「最近是否使用」而非精确时序；在特殊工作负载下可能退化为 FIFO（如所有页引用位都被置1）；改进型需要额外的修改位支持。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述 Belady 异常和栈式算法：①什么是 Belady 异常，给出一个具体的 FIFO 例子（3帧 vs 4帧）；②什么是栈式算法，为什么栈式算法不会出现 Belady 异常；③ LRU 是否是栈式算法，如何证明？", "options": [], "answer": "", "knowledge_point": "Belady异常", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① Belady 异常：</strong>指对某些页面置换算法，增加分配给进程的物理帧数后，缺页次数反而增加的异常现象。<br>FIFO 经典例子（引用序列：1,2,3,4,1,2,5,1,2,3,4,5）：<br>3帧时：缺页9次；4帧时：缺页10次。帧数增加反而缺页增多，这就是 Belady 异常。<br><br><strong>② 栈式算法：</strong>若某置换算法满足性质 M(m,r) ⊆ M(m+1,r)（在同一引用序列的第 r 步，m 帧时内存中的页集合是 m+1 帧时内存中页集合的子集），则称其为栈式算法。栈式算法不会出现 Belady 异常——因为增加一帧时，原来 m 帧中的所有页依然在 m+1 帧中，缺页只会减少或不变，不会增多。<br><br><strong>③ LRU 是栈式算法的证明思路：</strong><br>对 LRU，分配 m 帧时，任意时刻内存中保存的是最近 m 个不同页。分配 m+1 帧时，内存中保存最近 m+1 个不同页。显然最近 m 个不同页 ⊆ 最近 m+1 个不同页，即 M(m,r) ⊆ M(m+1,r) 恒成立，因此 LRU 是栈式算法，不会出现 Belady 异常。反观 FIFO，其淘汰决策仅基于调入时间而非使用历史，帧数变化会改变淘汰顺序，可能打破子集关系，因此 FIFO 不是栈式算法。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "完整描述 Core i7 的虚拟地址翻译过程（从虚拟地址到物理地址），包括：① 虚拟地址格式（4级页表结构）；② TLB 命中时的翻译流程；③ TLB 未命中时如何走多级页表；④ 最终得到物理地址后如何在 L1 Cache 中查找数据。", "options": [], "answer": "", "knowledge_point": "Core i7四级页表", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① 虚拟地址格式：</strong><br>Core i7 使用 48 位有效虚拟地址（64 位寄存器，高16位符号扩展），格式为：[VPN1(9位)|VPN2(9位)|VPN3(9位)|VPN4(9位)|VPO(12位)]。每级页表有 2^9=512 个 8字节条目，恰好占1个4KB页。<br><br><strong>② TLB 命中时的翻译流程：</strong><br>MMU 从虚拟地址提取 VPN（高36位），将 VPN 拆分为 TLBT（TLB标记）和 TLBI（TLB索引）查询 TLB（全相联或组相联）。若有效位=1且标记匹配，直接得到 PPN（物理页帧号）。物理地址 = PPN（高位）拼接 VPO（低12位），整个过程在几个 CPU 周期内完成，无需访问内存。<br><br><strong>③ TLB 未命中时的四级页表遍历：</strong><br>CPU 从 CR3 寄存器获得 L1 页表（全局目录）的物理地址 → 以 VPN1 为索引取得 L2 页表基址（第1次内存访问）→ 以 VPN2 为索引取得 L3 页表基址（第2次）→ 以 VPN3 为索引取得 L4 页表基址（第3次）→ 以 VPN4 为索引取得最终 PTE，从中提取 PPN（第4次）→ 将 VPN→PPN 映射填入 TLB，供后续直接命中。共4次额外内存访问。<br><br><strong>④ L1 Cache 查找：</strong><br>物理地址分解为 [标记(t位)|组索引(s位)|块偏移(b位)]（Core i7 L1：s=6，b=6，E=8路组相联）。用 s=6 位选定64组中的一组，将标记 t 位与该组所有8行的标记比较，若有效位=1且标记匹配则 Cache 命中，从块中偏移 b 位处取数据；否则 Cache 缺失，从 L2/L3 或内存加载整个缓存行。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某系统有4个物理帧，进程P的页面访问序列为：0, 1, 2, 3, 0, 1, 4, 0, 1, 2, 3, 4。\n\n（1）分别用 FIFO 和 LRU 算法模拟页面置换过程，记录每步内存状态和是否缺页（每步1行，共12行），并统计总缺页次数。（10分）\n\n（2）如果将帧数增加到5帧，用 FIFO 算法重新计算缺页次数，并判断是否出现 Belady 异常。（4分）\n\n（3）LRU 的两种精确实现方式是什么？各有什么缺点？实际系统为什么选择 Clock 算法作为近似？（6分）", "options": [], "answer": "", "knowledge_point": "页面置换算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>（1）4帧模拟：</strong><br>\n<strong>FIFO（4帧）：</strong><br>\n步骤1: 访问0 → 缺页 {0} 帧状态:[0,-,-,-]<br>\n步骤2: 访问1 → 缺页 {0,1} 帧状态:[0,1,-,-]<br>\n步骤3: 访问2 → 缺页 {0,1,2} 帧状态:[0,1,2,-]<br>\n步骤4: 访问3 → 缺页 {0,1,2,3} 帧状态:[0,1,2,3]<br>\n步骤5: 访问0 → 命中 帧状态:[0,1,2,3]<br>\n步骤6: 访问1 → 命中 帧状态:[0,1,2,3]<br>\n步骤7: 访问4 → 缺页，淘汰0（最早） {1,2,3,4} 帧状态:[1,2,3,4]<br>\n步骤8: 访问0 → 缺页，淘汰1 {2,3,4,0} 帧状态:[2,3,4,0]<br>\n步骤9: 访问1 → 缺页，淘汰2 {3,4,0,1} 帧状态:[3,4,0,1]<br>\n步骤10: 访问2 → 缺页，淘汰3 {4,0,1,2} 帧状态:[4,0,1,2]<br>\n步骤11: 访问3 → 缺页，淘汰4 {0,1,2,3} 帧状态:[0,1,2,3]<br>\n步骤12: 访问4 → 缺页，淘汰0 {1,2,3,4} 帧状态:[1,2,3,4]<br>\n<strong>FIFO 4帧总缺页：10次</strong><br><br>\n<strong>LRU（4帧）：</strong><br>\n步骤1-6: 同 FIFO，缺页4次，帧中{0,1,2,3}，最近使用顺序:3>1>0>2（最近->最久）<br>\n步骤7: 访问4 → 缺页，淘汰最久未用=2，{0,1,3,4}，顺序:4>1>0>3<br>\n步骤8: 访问0 → 命中，更新顺序:0>4>1>3<br>\n步骤9: 访问1 → 命中，更新顺序:1>0>4>3<br>\n步骤10: 访问2 → 缺页，淘汰最久=3，{0,1,2,4}，顺序:2>1>0>4<br>\n步骤11: 访问3 → 缺页，淘汰最久=4，{0,1,2,3}，顺序:3>2>1>0<br>\n步骤12: 访问4 → 缺页，淘汰最久=0，{1,2,3,4}，顺序:4>3>2>1<br>\n<strong>LRU 4帧总缺页：8次（< FIFO的10次）</strong><br><br>\n<strong>（2）FIFO 5帧 Belady 异常检验：</strong><br>\n5帧 FIFO：前5步各缺页（{0,1,2,3,4}），步骤6-12全部命中（0,1,2,3,0,1,4均已在内存）。<br>步骤8-12继续：访问0(命中)→1(命中)→2(命中)→3(命中)→4(命中)<br>\n<strong>5帧 FIFO 总缺页：5次</strong><br>\n4帧时10次 > 5帧时5次，帧数增加缺页减少，<strong>未出现 Belady 异常</strong>（此序列下FIFO未触发异常，但FIFO存在出现Belady异常的可能性）。<br><br>\n<strong>（3）LRU 精确实现与 Clock 的选择：</strong><br>\n①<strong>计数器法</strong>：维护全局时间计数器，每次页访问将当前时间写入页表项。置换时扫描所有帧找最小时间戳。缺点：每次内存访问都要写时间戳（开销大），置换时需线性扫描（O(n)）。<br>\n②<strong>页码栈法</strong>：维护双向链表（栈），每次访问将页号移到链表头，链表尾即 LRU 页。缺点：每次访问需修改链表中间节点，指针操作多（每次访问6个指针写操作），无法用硬件高效实现。<br>\n③<strong>为何选 Clock</strong>：Clock 只需维护一个引用位（MMU硬件支持自动置1），置换时线性扫描一次（最多绕一圈），开销极小；实际工作负载下命中率接近精确 LRU；可扩展为改进型（结合修改位）进一步优化磁盘写操作，是性能与实现复杂度的最佳平衡。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

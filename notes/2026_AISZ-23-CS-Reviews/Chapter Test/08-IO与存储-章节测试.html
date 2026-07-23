@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第八章：I/O与存储</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第八章：I/O与存储</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "以下哪种I/O控制方式中，CPU在设备工作期间可以执行其他任务，且每次只传输少量数据就发一次中断？", "options": ["程序直接控制（轮询）", "中断控制", "DMA方式", "通道控制"], "answer": 1, "knowledge_point": "I/O控制方式", "diagnosis_hint": "混淆中断方式与DMA方式的适用场景", "explanation": "<strong>正确答案</strong>：B（中断控制）<br><br><strong>推理过程</strong>：中断控制中，设备完成一次数据传输（通常是一个字节或字）后向CPU发中断，CPU执行中断处理程序传送数据，然后返回原来的工作。A（轮询）中CPU忙等无法做其他事；C（DMA）一次传输整批数据才发一次中断；D（通道）功能更强，适合大型机。", "pitfall": "中断方式适合低速或中速设备，DMA适合高速大容量设备（如磁盘）。"}, {"type": "choice", "points": 2, "question": "DMA方式初始化时，需要向DMA控制器写入哪些参数？", "options": ["只需写入内存起始地址", "内存起始地址、传送字节数、控制字", "设备类型和驱动程序地址", "中断向量号和内存地址"], "answer": 1, "knowledge_point": "DMA方式", "diagnosis_hint": "不清楚DMA初始化的必要参数", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：DMA初始化需要三类参数：①内存起始地址（存放数据的目标内存位置）写入DMA的内存地址寄存器；②传送字节数写入DMA的传送字节数寄存器；③控制字（含中断允许位、DMA启动位=1）写入控制状态寄存器。启动位置1后DMA自动开始传输，无需CPU介入，完成后发中断。", "pitfall": "DMA三要素：地址+字节数+控制字，缺一不可。"}, {"type": "choice", "points": 2, "question": "SPOOLING技术的核心作用是：", "options": ["提高CPU运算速度", "将独占设备改造为逻辑上的共享设备", "增加物理内存容量", "加速网络传输"], "answer": 1, "knowledge_point": "SPOOLING技术", "diagnosis_hint": "不理解SPOOLING的本质", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：SPOOLING（假脱机）的核心价值是将独占设备（如打印机）虚拟化为多个进程都可以同时使用的共享设备。原理是将各进程的输出数据先排入磁盘上的输出井，再由守护进程逐个实际输出到打印机。多个进程看到的是各自独立的虚拟打印机，不需要互斥等待。", "pitfall": "SPOOLING通过磁盘缓冲实现独占设备共享，不是真正的并发输出。"}, {"type": "choice", "points": 2, "question": "磁盘访问中耗时最多的两个环节是：", "options": ["队列时间和控制器时间", "寻道时间和旋转时间", "传输时间和寻道时间", "控制器时间和传输时间"], "answer": 1, "knowledge_point": "磁盘访问时间", "diagnosis_hint": "不清楚磁盘访问延迟的组成", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：磁盘访问延迟 = 队列时间 + 控制器时间 + 寻道时间 + 旋转时间 + 传输时间。队列时间和控制器时间较短（约0.25ms）可忽略；传输时间对于小数据也较短。寻道时间（约8~12ms）和旋转时间（平均半圈约4ms）是主要瓶颈，磁盘调度的目标就是最小化这两项。", "pitfall": "磁盘调度优化的是寻道时间，不是传输时间。"}, {"type": "choice", "points": 2, "question": "SCAN（电梯）磁盘调度算法相比SSTF的主要优点是：", "options": ["平均寻道时间更短", "彻底消除了请求饥饿问题", "实现更简单", "磁头移动总距离更少"], "answer": 1, "knowledge_point": "磁盘调度算法", "diagnosis_hint": "混淆SSTF和SCAN的优缺点", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：SSTF的主要缺点是饥饿问题——若中间磁道持续有新请求，远端磁道的请求可能永远等不到服务。SCAN通过单向扫到磁盘一端再折返，保证所有请求最终都会被服务，彻底解决了饥饿问题。A错——SCAN和SSTF的平均寻道距离相当；D错——SCAN移动总距离不一定更少。", "pitfall": "SCAN解决了SSTF的饥饿问题，但带来了延迟不均（端部请求等待较长）。"}, {"type": "choice", "points": 2, "question": "SSD（固态硬盘）中，数据写入和擦除的基本单位分别是：", "options": ["都以页（page）为单位", "写以页（page）为单位，擦除以块（block）为单位", "写以块（block）为单位，擦除以页（page）为单位", "都以块（block）为单位"], "answer": 1, "knowledge_point": "SSD读写特点", "diagnosis_hint": "混淆SSD读写与擦除的单位", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：NAND Flash的基本特性：写入（Program）以页（page，4KB）为单位；擦除（Erase）以块（block，512KB，含64~512页）为单位。这是由Flash器件的物理特性决定的——擦除需要较高电压，只能以block为单位。这种不对称性导致了写放大效应和需要垃圾回收机制。", "pitfall": "SSD：写=页粒度，擦=块粒度。不能直接覆盖写，修改需read-modify-write。"}, {"type": "choice", "points": 2, "question": "以下关于C-SCAN（循环扫描）磁盘调度的说法，正确的是：", "options": ["磁头从一端扫到另一端后原路折返", "磁头单向扫描，到另一端后直接跳回起始端重新扫", "优先处理距当前位置最近的请求", "与SCAN完全相同"], "answer": 1, "knowledge_point": "磁盘调度算法", "diagnosis_hint": "混淆SCAN和C-SCAN", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：C-SCAN是SCAN的改进。SCAN折返后反向扫描，造成端部请求延迟不均。C-SCAN到达一端后不折返，而是直接飞速跳回另一端（不服务途中请求），然后再单向扫描。这样所有请求的最长等待时间趋于一致。", "pitfall": "C-SCAN：单向扫描，到头直接跳回，不折返扫描。C-LOOK是C-SCAN的进一步优化（到最后一个请求就回头）。"}, {"type": "choice", "points": 2, "question": "Linux系统中，进程写磁盘时数据先写入内存buffer，sync命令的作用是：", "options": ["清空内存buffer释放内存", "强制将buffer中的数据写入磁盘", "关闭文件系统缓冲区", "重启磁盘设备驱动"], "answer": 1, "knowledge_point": "磁盘缓冲", "diagnosis_hint": "不理解sync命令的作用", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：Linux为提升I/O效率，写磁盘时先将数据写入内存buffer（write-back策略）。若此时断电，buffer中的数据丢失。sync命令强制flush文件系统buffer，将所有脏数据写入磁盘，确保数据持久化。系统自动写盘的时机：①kflush内核线程周期写；②buffer满。", "pitfall": "sync = 强制刷盘（flush），保证数据不丢失。"}, {"type": "choice", "points": 2, "question": "设备寄存器的内存映像编址（Memory-Mapped I/O）与独立编址（Port-Mapped I/O）的关键区别是：", "options": ["内存映像编址比独立编址快", "内存映像编址使用普通内存访问指令，独立编址需要专用I/O指令", "独立编址只能用于字符设备", "内存映像编址需要特殊的CPU支持"], "answer": 1, "knowledge_point": "设备寄存器编址", "diagnosis_hint": "不清楚两种编址方式的实现区别", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：内存映像编址（MMIO）将设备寄存器映射到物理地址空间，CPU用普通 mov 指令访问，如 mov [0x8000f000], AL。独立编址（PMIO）需要专用I/O指令，如x86的 in/out（out 0x21, AL）。MMIO更灵活，现代系统广泛采用。", "pitfall": "MMIO用mov；PMIO用in/out。x86支持两种方式。"}, {"type": "choice", "points": 2, "question": "磁盘格式化时，MBR（主引导记录）存放在：", "options": ["磁盘的最后一个扇区", "磁盘的第1个扇区", "每个分区的第1个扇区", "引导分区的任意位置"], "answer": 1, "knowledge_point": "磁盘布局", "diagnosis_hint": "不记得MBR的位置", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：MBR（Master Boot Record）固定存放在整个硬盘的第1个扇区（LBA 0）。MBR包含：①引导代码（约446字节）；②主分区表（最多4个基本分区位置信息，每项16字节）；③结束标志0x55AA。计算机启动时，ROM自举程序将MBR读入内存执行。", "pitfall": "MBR在第1个扇区（LBA 0）；分区引导扇区（VBR）才在每个分区的第1扇区。"}, {"type": "tf", "points": 1, "question": "轮询（程序直接控制）方式的主要缺点是：CPU在等待设备就绪期间处于忙等待状态，无法执行其他有用工作。", "options": [], "answer": true, "knowledge_point": "I/O控制方式", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：轮询方式中CPU发出I/O命令后必须不断循环读取设备状态寄存器，直到设备就绪。由于CPU速度远快于外设，等待时间极长，CPU完全被占用无法做其他事，严重浪费算力。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "DMA方式中，整个数据传输过程完全不需要CPU参与。", "options": [], "answer": false, "knowledge_point": "DMA方式", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：DMA方式中CPU需要参与两个阶段：①开始：CPU对DMA初始化（写内存地址、字节数、控制字，启动DMA）；②结束：DMA完成后发中断，CPU执行中断处理程序唤醒等待进程。传输过程中CPU不参与，但初始化和结束仍需CPU。是「极少参与」而非「完全不参与」。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "SCAN（电梯）算法中，磁头到达磁盘一端后会立刻折返，即使该端没有任何请求。", "options": [], "answer": true, "knowledge_point": "磁盘调度算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：标准SCAN算法扫描到磁盘物理端点再折返，即使端点附近没有请求。LOOK算法是SCAN的改进，只扫描到最后一个有请求的磁道就折返，减少不必要移动。C-LOOK = C-SCAN + LOOK改进，是推荐的默认算法。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "SPOOLING系统中的输入井和输出井是在磁盘上开辟的存储区域，它们是虚拟出来的设备。", "options": [], "answer": true, "knowledge_point": "SPOOLING技术", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：SPOOLING的输入井和输出井是磁盘上专门开辟的两个存储区域，用于持久化排队缓冲I/O数据。它们是虚拟设备的体现——每个进程看到的是自己的虚拟输出设备，实际都向输出井写数据，由守护进程统一输出到真实物理设备。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "SSD的顺序读写速度与随机读写速度基本相同，没有显著差异。", "options": [], "answer": false, "knowledge_point": "SSD性能特性", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：SSD的顺序读写速度高于随机读写。随机写时每次修改可能需要擦除整个块（block），触发read-modify-write和垃圾回收，造成写放大，延迟高。典型SATA SSD：顺序读550MB/s，随机读365MB/s；顺序写470MB/s，随机写303MB/s。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "双缓冲技术可以实现CPU处理数据与外设传输数据的完全并行，彻底消除了等待时间。", "options": [], "answer": false, "knowledge_point": "缓冲技术", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：双缓冲虽然实现了一定并行，但若CPU处理速度与外设传输速度差异过大，仍然会有等待时间。双缓冲只能在两者速度相近时近似完全并行，无法彻底消除等待时间。环形缓冲和缓冲池可进一步缓解速度不匹配。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "CHS（柱面-磁头-扇区）寻址方式由于受到参数位数限制，最大只能寻址约8GB的磁盘空间。", "options": [], "answer": true, "knowledge_point": "磁盘寻址CHS", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：CHS限制：磁头数最大256（8位），柱面数最大1024（10位），每道扇区数最大63（6位）。最大容量 = 256×1024×63×512B = 8064MB ≈ 8GB。现代硬盘远超此限制，因此CHS已被LBA取代。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "SSTF（最短寻道时间优先）磁盘调度算法能保证全局平均寻道时间最短。", "options": [], "answer": false, "knowledge_point": "磁盘调度算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：SSTF每次贪心地选择距当前磁头最近的请求，是局部最优策略，但不能保证全局平均寻道时间最短。贪心的局部最优不等于全局最优。此外SSTF还有饥饿问题。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "FTL（闪存翻译层）中的损耗平衡（Wear Leveling）目的是让所有Flash块的擦写次数尽量均匀，从而延长SSD整体寿命。", "options": [], "answer": true, "knowledge_point": "SSD FTL", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：Flash每个块有擦写次数限制（SLC约10万次，TLC约1000次）。若热点块被频繁擦写而冷数据块很少被擦，会导致热点块过早失效。损耗平衡通过动态分配和静态迁移，使各块磨损均匀，最大化SSD寿命。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "I/O系统中，通道控制方式与DMA方式的共同点是都能实现I/O设备与内存之间的直接数据传输，无需CPU字节搬运。", "options": [], "answer": true, "knowledge_point": "I/O控制方式", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：DMA和通道方式都能绕过CPU直接在外设与内存之间建立数据传输通路，无需CPU逐字节搬运。区别在于：DMA只能实现固定逻辑的数据传送，控制少数同类设备；通道有自己的指令集，能力更强，可控制多种不同设备并发，适合大型机。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述DMA（直接内存存取）方式的工作过程，包括CPU的参与时机和DMA的主要工作。", "options": [], "answer": "", "knowledge_point": "DMA方式", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>①<strong>初始化阶段（CPU参与）</strong>：进程请求I/O，CPU对DMA初始化：将内存起始地址写入DMA内存地址寄存器，传输字节数写入字节数寄存器，控制字（含DMA启动位=1）写入控制状态寄存器。<br>②<strong>传输阶段（CPU基本不参与）</strong>：DMA启动后接管数据地址总线（CPU工作周期挪用），独立控制外设与内存之间的数据传输：每传一个数据单元，DMA将数据送到内存相应位置，字节数寄存器减1，循环至传输完毕。CPU继续调度其他进程（当前进程阻塞）。<br>③<strong>结束阶段（CPU参与）</strong>：DMA传输完毕向CPU发中断，CPU执行中断处理程序，唤醒等待进程。<br><br><em>关键：DMA开始和结束时需CPU，传输过程中不需CPU字节级参与，适合磁盘等高速大容量设备。</em>", "pitfall": ""}, {"type": "short", "points": 6, "question": "给定以下磁盘调度实例：磁头当前在53磁道，请求队列为 98, 183, 37, 122, 14, 124, 65, 67。分别用FCFS、SSTF、SCAN（向磁道号增大方向移动）三种算法，计算各算法的磁头移动总磁道数。", "options": [], "answer": "", "knowledge_point": "磁盘调度算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>FCFS（按请求顺序）</strong>：<br>53→98(+45)→183(+85)→37(-146)→122(+85)→14(-108)→124(+110)→65(-59)→67(+2)<br>移动总量 = 45+85+146+85+108+110+59+2 = <strong>640磁道</strong><br><br><strong>SSTF（每次选最近请求）</strong>：<br>53→65(+12)→67(+2)→37(-30)→14(-23)→98(+84)→122(+24)→124(+2)→183(+59)<br>移动总量 = 12+2+30+23+84+24+2+59 = <strong>236磁道</strong><br><br><strong>SCAN（向增大方向）</strong>：<br>向大磁道扫：53→65→67→98→122→124→183（到达，折返）<br>向小磁道扫：183→37→14<br>移动总量 = (183-53) + (183-14) = 130 + 169 = <strong>299磁道</strong>", "pitfall": ""}, {"type": "short", "points": 6, "question": "解释SSD（固态硬盘）中「写放大效应（Write Amplification）」的原因，以及FTL中垃圾回收（GC）的必要性。", "options": [], "answer": "", "knowledge_point": "SSD FTL", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>写放大效应原因</strong>：<br>NAND Flash写入以页（4KB）为单位，擦除只能以块（512KB）为单位，且不能直接覆盖写。修改一个页时必须：①读出该块所有有效页到缓存；②在缓存中修改目标页；③找空白块将修改后数据写入；④原块中被修改的页标为无效页。实际写入的数据量（整块）远大于逻辑要修改的数据量（一页），即写放大效应。<br><br><strong>垃圾回收必要性</strong>：<br>随着使用时间增长，大量无效页散布在各块中，占用物理空间但无法写入新数据。GC选择含大量无效页的块，将有效页搬移到其他空白块，然后擦除该整块使之变为可用空白块。没有GC，SSD会逐渐耗尽可写空间而无法写入新数据。", "pitfall": ""}, {"type": "short", "points": 6, "question": "比较单缓冲、双缓冲、环形缓冲、缓冲池四种软件缓冲实现方式，分析各自的适用场景。", "options": [], "answer": "", "knowledge_point": "缓冲技术", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>单缓冲</strong>：一个缓冲区，外设与CPU操作串行（不能同时读写）。适用：简单系统、对性能要求不高的场合。<br><strong>双缓冲</strong>：两个缓冲区交替使用，外设向缓冲1写时CPU从缓冲2读，实现一定并行。适用：I/O量中等、CPU与外设速度大致匹配的场合（如打印输出）。<br><strong>环形缓冲</strong>：多个等大缓冲区链成环，三个指针（Head/Full/Empty）管理。能平滑吸收速度波动。适用：连续数据流、流媒体、通信缓冲。<br><strong>缓冲池</strong>：系统级公共池，所有进程共享，OS统一管理分配/回收，包含空队列、输入队列、输出队列。适用：多进程并发I/O的操作系统内核（如Linux页缓存），是最通用高效的方式。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "详细论述I/O控制方式的演化过程：从程序直接控制（轮询）到中断控制再到DMA方式，每次改进解决了什么问题，又引入了什么新的限制？为什么大型机还需要通道控制方式？", "options": [], "answer": "", "knowledge_point": "I/O控制方式", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① 程序直接控制（轮询）</strong>：CPU发I/O命令后循环查询状态寄存器，设备就绪后读/写数据。问题：CPU比外设快几个数量级，绝大多数时间空转等待，CPU利用率极低，无法同时处理多个I/O。<br><br><strong>② 中断控制方式</strong>（改进轮询）：CPU发命令后不再等待，继续执行其他进程；设备完成后发中断，中断处理程序传数据。解决：CPU可与I/O并行，利用率大幅提升。新限制：每传输一个字节就发一次中断，高速设备大量传输时中断频率过高，CPU大量时间用于中断处理。<br><br><strong>③ DMA方式</strong>（改进中断）：CPU仅在初始化和完成时参与，整批数据传输由DMA硬件完成，一批数据只发一次中断。解决：减少中断频率，适合磁盘等大批量传输。新限制：DMA只能执行固定数据搬运逻辑，无法处理复杂I/O操作序列；一个DMA一般只控制一种设备。<br><br><strong>④ 通道控制方式</strong>（大型机需求）：通道具有简单CPU功能、可编程，执行OS放在内存中的通道程序，独立完成复杂I/O操作序列。一个通道可控制多台不同设备（串行/并发子通道），真正实现CPU与多个I/O设备全并行。大型机配备大量I/O设备，需要通道来分离I/O管理，减轻CPU负担。DMA vs 通道：DMA功能固定、控制单一设备；通道可编程、控制多种设备，能力更强。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "论述磁盘调度算法的设计目标与权衡：① FCFS、SSTF、SCAN、C-SCAN、C-LOOK各自的原理和主要优缺点；② 为什么C-LOOK被认为是操作系统中最合理的默认算法？", "options": [], "answer": "", "knowledge_point": "磁盘调度算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① 各算法分析：</strong><br>FCFS：按到达顺序服务，公平简单，但磁头可能长途奔袭，平均寻道距离大，仅适用于I/O负载极轻的场合。<br>SSTF：每次服务距当前磁头最近的请求，局部贪心，平均寻道时间较短，但存在饥饿问题——中间磁道频繁有新请求时远端请求长期被忽视。<br>SCAN（电梯）：磁头单向扫描到端点再折返，解决饥饿，性能与SSTF相当，但端部延迟不均（刚扫过的区域等待时间最长）。<br>C-SCAN：单向扫描，到端后直接跳回重扫，消除延迟不均，但跳回时有较长空移距离。<br>C-LOOK：C-SCAN改进，扫到最后一个有请求的磁道就回头（而非物理端点），消除不必要空移。<br><br><strong>② C-LOOK作为默认算法的理由：</strong><br>C-LOOK综合了各算法优点：①无饥饿（SCAN特性）；②延迟相对均匀（C-SCAN特性）；③消除端点空移（LOOK优化）；④实现不复杂。与SSTF比：牺牲少量平均寻道距离，换取公平性（无饥饿）。与C-SCAN比：不走到物理端点，减少空移开销。综合性能、公平性、实现复杂度三方面，C-LOOK是最好的工程权衡，是现代OS磁盘调度的推荐选择。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "综合论述I/O系统的完整设计：① 操作系统为什么要将I/O设备抽象为文件（设备文件），这种抽象有什么好处？② 从用户调用 write() 写磁盘，到数据真正存入磁盘，完整经历哪些软硬件层次？③ SPOOLING技术如何解决独占设备的共享问题，请以打印机为例详细说明。", "options": [], "answer": "", "knowledge_point": "I/O系统设计", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><strong>① 设备文件抽象的好处：</strong><br>OS将所有I/O设备统一抽象为文件，提供一致接口 open/read/write/close/ioctl。好处：①统一编程模型——程序员用相同代码操作不同设备，降低编程复杂度；②设备无关性——应用程序不了解底层设备细节，驱动程序封装差异；③资源共享——通过fd机制父子进程共享文件描述符；④可扩展性——新设备只需提供标准接口的驱动，无需修改应用。<br><br><strong>② write() 到数据写入磁盘的完整路径：</strong><br>用户进程调用 write(fd,buf,n) → 系统调用陷入内核 → I/O内核子系统检查权限、将数据写入内核页缓存（page cache） → 触发回写（缓存满或显式sync）→ 文件系统层确定目标扇区号 → 块设备驱动层将I/O请求加入请求队列 → 磁盘调度器（如C-LOOK）确定服务顺序 → 设备驱动程序将扇区号和内存地址写入DMA寄存器，启动DMA → 进程阻塞 → DMA控制数据从内存传到磁盘 → 磁盘控制器寻道+旋转，写入数据 → DMA完成发中断 → 中断处理程序唤醒进程 → write()返回。<br><br><strong>③ SPOOLING以打印机为例：</strong><br>打印机是独占设备，传统上进程必须独占直到打印完成。SPOOLING解决：①进程「打印」时，OS不将数据直接发给打印机，而是将打印数据写入磁盘输出井（一个文件）并登记打印队列；②打印守护进程持续监控队列，依次将各进程的输出井文件实际发给物理打印机；③进程角度：每个进程即时返回似乎独占了打印机；物理打印机角度：一次服务一个进程，顺序打印。结果：多个进程可以同时「打印」，实际有序排队，独占设备变为逻辑共享设备。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某磁盘转速为7200rpm，平均寻道时间为9ms，传输速率为100MB/s，控制器开销0.1ms。\n\n（1）计算：①平均旋转延迟；②读取一个512KB数据块的平均磁盘访问时间。（6分）\n\n（2）磁头当前在100磁道，有如下请求队列（按到达顺序）：55, 58, 39, 18, 90, 160, 150, 38, 184。\n    分别用SSTF和C-SCAN（向磁道号增大方向移动，磁盘最大磁道为200）计算磁头移动总磁道数，并指出SSTF是否可能出现饥饿现象及原因。（8分）\n\n（3）若用DMA方式读取上述512KB数据块，简述从进程发起读请求到数据就绪的完整过程（分步骤），并说明相比中断方式的优势。（6分）", "options": [], "answer": "", "knowledge_point": "磁盘访问时间计算", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br>\n<strong>（1）访问时间计算：</strong><br>\n①平均旋转延迟 = 0.5 / (7200/60) = 0.5 / 120 s = <strong>4.17ms</strong><br>\n②传输时间 = 512KB / 100MB/s = 512/(100×1024) s ≈ <strong>5ms</strong><br>\n平均磁盘访问时间 = 9 + 4.17 + 5 + 0.1 = <strong>18.27ms</strong><br><br>\n<strong>（2）磁盘调度（磁头初始在100，请求：55,58,39,18,90,160,150,38,184）：</strong><br>\n<strong>SSTF：</strong><br>\n100→90(-10)→58(-32)→55(-3)→39(-16)→38(-1)→18(-20)→150(+132)→160(+10)→184(+24)<br>\n移动总量 = 10+32+3+16+1+20+132+10+24 = <strong>248磁道</strong><br><br>\n<strong>C-SCAN（向增大方向，到200跳回0）：</strong><br>\n100→150(+50)→160(+10)→184(+24)→200(+16)→跳到0→18(+18)→38(+20)→39(+1)→55(+16)→58(+3)→90(+32)<br>\n移动总量（含跳回200） = (200-100) + 200 + (90-0) = 100+200+90 = <strong>390磁道</strong><br><br>\n<strong>SSTF饥饿分析：</strong>会出现饥饿。原因：若中间磁道（100附近）持续有新请求到达，SSTF反复服务这些最近的请求，而远端磁道（如18或184）的请求始终不是「最近的」，长期得不到服务，即饥饿现象。<br><br>\n<strong>（3）DMA读取过程与优势：</strong><br>\n步骤：①CPU对DMA初始化（写内存目标地址、512KB字节数、启动控制字），进程阻塞；<br>\n②DMA控制器接管总线，控制磁盘寻道+旋转定位，将数据逐步传入指定内存，无需CPU字节搬运；<br>\n③512KB传输完毕，DMA向CPU发一次中断；<br>\n④中断处理程序唤醒阻塞进程，数据就绪。<br><br>\n优势：中断方式每字节一次中断，读512KB需约52万次中断，CPU频繁被打断。DMA方式整个传输只发1次中断，大幅减少中断处理开销，CPU可做更多有用工作，系统吞吐量更高。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

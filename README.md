@@ -36,6 +36,16 @@
 - **Computer Systems: A Programmer's Perspective (CSAPP)**（Randal E. Bryant / David R. O'Hallaron / Pearson / 3rd Edition / textbook）
 - **王道考研系列：操作系统考研复习指导**（王道论坛 / 电子工业出版社 / textbook）
 
+## 学习资料
+<!-- TOML-SECTION: title="学习资料" -->
+
+<!-- TOML-ITEM: id="item-学习资料-1" -->
+
+- [2026 年 AISZ-23 复习资料总览](notes/2026_AISZ-23-CS-Reviews/index.html)：复习速查表、九章知识清单和交互式章节测试
+- `assignments/2026_AISZ-23-CS-Reviews/`：四次课后作业及参考答案；也可从上述总览直接打开
+- HTML 可直接用浏览器打开；部分公式由 MathJax 渲染，首次加载需要联网
+- 资料来源：[MukioXun/AISZ-23-CS-Review-Materials](https://github.com/MukioXun/AISZ-23-CS-Review-Materials)
+
 ## 关于考试
 <!-- TOML-SECTION: title="关于考试" -->
 

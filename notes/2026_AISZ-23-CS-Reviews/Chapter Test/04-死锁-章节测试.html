@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第四章：死锁</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+/* === Interactive Test Styles === */
+
+/* ── Score box ── */
+#score-box {
+  display: none; background: var(--paper-dark); color: var(--ink);
+  padding: 16px 20px; border-radius: var(--radius); margin: 14px 0;
+  text-align: center; border: 1px solid var(--card-border);
+}
+#score-box .score-num { font-size: 2.2em; font-weight: 700; }
+#score-box .score-label { font-size: 0.85em; color: var(--ink-light); }
+
+/* ── Question card ── */
+.q-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 12px 14px; margin: 10px 0;
+  transition: all 0.15s;
+}
+.q-card.correct { border-left: 3px solid var(--correct); background: #f7fdf4; }
+.q-card.wrong   { border-left: 3px solid var(--wrong); background: #fef9f9; }
+
+.q-num  { font-weight: 700; font-size: 0.98em; margin-bottom: 4px; }
+.q-text { margin-bottom: 8px; font-size: 0.98em; }
+.q-text pre {
+  background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+  padding: 10px 14px; margin: 8px 0; overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  line-height: 1.5; white-space: pre;
+}
+.q-text code {
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em;
+  background: #f0f0f0; padding: 1px 4px; border-radius: 3px;
+}
+
+/* ── Options (compact) ── */
+.option {
+  display: block; padding: 4px 10px; margin: 3px 0;
+  border: 1px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; transition: all 0.12s; font-size: 0.93em;
+  background: #fefcf5;
+}
+.option:hover            { background: #f0ede0; }
+.option input            { margin-right: 6px; }
+.option.selected         { border-color: var(--accent); background: #eff6ff; }
+.option.correct-answer   { border-color: var(--correct); background: var(--correct-bg); }
+.option.wrong-answer     { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* ── Textareas (compact) ── */
+.q-textarea {
+  width: 100%; min-height: 56px; border: 1px solid var(--card-border);
+  border-radius: 4px; padding: 6px 10px; font-family: inherit;
+  font-size: 0.93em; background: #fefcf5; resize: vertical;
+}
+.q-textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── Result after grading ── */
+.result {
+  display: none; margin-top: 8px; padding: 8px 12px;
+  background: #fefcf5; border: 1px solid var(--card-border);
+  border-radius: 4px; font-size: 0.9em; line-height: 1.6;
+}
+.result .badge {
+  display: inline-block; padding: 1px 9px; border-radius: 3px;
+  font-weight: 700; font-size: 0.82em; margin-right: 6px;
+}
+.badge-ok  { background: var(--correct-bg); color: #166534; }
+.badge-no  { background: var(--wrong-bg); color: #991b1b; }
+.badge-ref { background: #dbeafe; color: #1e40af; }
+
+.result .explanation { margin-top: 4px; color: var(--ink); }
+.result .pitfall { color: #b45309; margin-top: 3px; font-size: 0.9em; }
+
+/* ── Grading button ── */
+.grading-bar { text-align: center; margin: 20px 0; }
+.grading-bar button {
+  font-size: 1em; padding: 8px 32px; background: var(--accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+}
+.grading-bar button:hover     { background: var(--accent-hover); }
+.grading-bar button:disabled  { background: #bbb; cursor: not-allowed; }
+
+/* ── Wrong-question review document ── */
+.wrong-review-box {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 18px 0;
+}
+.wrong-review-box h3 {
+  margin-top: 0;
+}
+.wrong-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.wrong-review-actions button {
+  font-size: 0.92em;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.wrong-review-actions button:hover {
+  background: #000;
+}
+#wrong-review-text {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  line-height: 1.5;
+  background: #fff;
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第四章：死锁</h1>
+<h2 style="text-align:center">章节测试</h2>
+<p style="text-align:center;color:var(--ink-light);font-size:0.95em">满分100分</p>
+
+<div id="score-box"><div class="score-num" id="score-num">0</div><div class="score-label">总分</div></div>
+<div id="questions-container"></div>
+<div class="grading-bar no-print"><button onclick="gradeAll()" id="grade-btn">提交批改</button></div>
+<div id="wrong-review-box" class="wrong-review-box no-print"></div>
+
+<script>
+var Q = [{"type": "choice", "points": 2, "question": "下列关于死锁四个必要条件的说法，正确的是：", "options": ["满足四个必要条件则系统一定发生死锁", "只需破坏四个条件中的任意一个即可预防死锁", "循环等待是死锁的充分必要条件", "互斥使用条件在实际系统中通常可以被破坏"], "answer": 1, "knowledge_point": "死锁的四个必要条件", "diagnosis_hint": "混淆必要条件与充分条件", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：四个条件是死锁的必要条件，同时满足不一定死锁（资源多实例时）。但破坏任意一个，则死锁必不发生。互斥使用是资源固有属性，通常无法破坏。循环等待只是必要条件。", "pitfall": "必要条件 ≠ 充分条件，有环路不一定死锁"}, {"type": "choice", "points": 2, "question": "下列哪种死锁处理方法属于破坏\"持有并等待\"条件？", "options": ["资源有序分配策略", "银行家算法", "进程执行前一次性申请所有需要的资源", "剥夺资源法"], "answer": 2, "knowledge_point": "死锁预防", "diagnosis_hint": "混淆各种方法对应的破坏条件", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：一次性申请所有资源保证了进程请求资源时不持有其他资源，破坏了\"持有并等待\"。资源有序分配破坏循环等待；银行家算法是死锁避免；剥夺资源法破坏不可抢占。", "pitfall": "一次性分配 = 破坏持有并等待；有序分配 = 破坏循环等待"}, {"type": "choice", "points": 2, "question": "银行家算法中，安全性检测算法的时间复杂度为：", "options": ["O(n)", "O(mn)", "O(mn²)", "O(m²n²)"], "answer": 2, "knowledge_point": "死锁避免之银行家算法", "diagnosis_hint": "不记得时间复杂度", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：安全性检测外层 while 最多循环 n 次（每次标记一个进程），内层 for 遍历 n 个进程，每次比较 m 维向量，总复杂度为 O(mn²)。", "pitfall": "m 是资源种类数，n 是进程数"}, {"type": "choice", "points": 2, "question": "在资源分配图中，若存在环路，则：", "options": ["系统一定发生死锁", "若每种资源只有一个实例，则一定发生死锁", "若资源有多个实例，则一定发生死锁", "系统一定不发生死锁"], "answer": 1, "knowledge_point": "资源分配图", "diagnosis_hint": "误认为有环路必然死锁", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：当每种资源只有一个实例时，环路 &lt;=&gt; 死锁。当资源有多实例时，环路是死锁的必要条件，但不充分——可能有进程不参与环路，使得其他进程能完成并释放资源，打破死锁。", "pitfall": "单实例：有环=死锁；多实例：有环不一定死锁"}, {"type": "choice", "points": 2, "question": "银行家算法中，以下哪个数据结构记录的是\"各进程还需要的资源量\"？", "options": ["Available", "Allocation", "Need", "Work"], "answer": 2, "knowledge_point": "死锁避免之银行家算法", "diagnosis_hint": "混淆银行家算法中的数据结构含义", "explanation": "<strong>正确答案</strong>：C<br><br><strong>推理过程</strong>：Need[n][m] 记录每个进程还需要的各类资源量（= Max - Allocation）。Available 是当前可用量；Allocation 是已分配量；Work 是算法执行中动态追踪的可用量。", "pitfall": "Work 是算法内部变量，初始 = Available，执行中随进程完成而增加"}, {"type": "choice", "points": 2, "question": "目前大多数通用操作系统（如 UNIX、Windows）采用的死锁处理策略是：", "options": ["死锁预防", "死锁避免（银行家算法）", "死锁检测+恢复", "死锁忽略（鸵鸟算法）"], "answer": 3, "knowledge_point": "死锁忽略", "diagnosis_hint": "误认为操作系统有复杂的死锁处理机制", "explanation": "<strong>正确答案</strong>：D<br><br><strong>推理过程</strong>：大多数通用操作系统采用鸵鸟算法，不主动处理死锁。原因是死锁出现非确定，避免死锁的代价（银行家算法等）过于高昂，性价比低。", "pitfall": "银行家算法因开销过大，实际通用OS中很少使用"}, {"type": "choice", "points": 2, "question": "死锁避免与死锁预防的根本区别在于：", "options": ["死锁预防允许死锁发生，死锁避免不允许", "死锁预防是静态策略，死锁避免是动态策略", "死锁预防使用银行家算法，死锁避免破坏必要条件", "死锁预防效率更高"], "answer": 1, "knowledge_point": "死锁处理方法概述", "diagnosis_hint": "混淆预防和避免的定义", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：死锁预防是静态策略，在系统设计时破坏死锁的必要条件；死锁避免是动态策略，在运行时逐个检查每次资源请求。银行家算法属于死锁避免，不是预防。", "pitfall": "预防=静态破坏必要条件；避免=动态检测安全状态"}, {"type": "choice", "points": 2, "question": "某系统有3个并发进程，每个进程最多需要4个同类资源。该系统必然不会死锁的最少资源数量是：", "options": ["9", "10", "11", "12"], "answer": 1, "knowledge_point": "死锁的四个必要条件", "diagnosis_hint": "不会用公式推导最少资源数", "explanation": "<strong>正确答案</strong>：B（10个）<br><br><strong>推理过程</strong>：最坏情况下每个进程持有3个资源（最大需求-1=3）还在等，3进程×3=9个资源时可能死锁。只要资源数≥10，必有一个进程能拿到第4个资源完成执行，释放资源，打破循环。通用公式：n个进程各需k个资源，不死锁最少资源数 = n×(k-1)+1。", "pitfall": "公式：n*(k-1)+1；本题 3*(4-1)+1=10"}, {"type": "choice", "points": 2, "question": "银行家算法中，进程 Pi 发出资源请求 Request[i] 后，系统首先检查：", "options": ["Request[i] <= Available", "Request[i] <= Need[i]", "Request[i] <= Allocation[i]", "Request[i] <= Work"], "answer": 1, "knowledge_point": "死锁避免之资源请求算法", "diagnosis_hint": "混淆资源请求算法的检查顺序", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：资源请求算法的检查顺序：①先检查 Request[i] <= Need[i]（超出声明最大需求则报错）；②再检查 Request[i] <= Available（不够则等待）；③试分配后运行安全性算法。", "pitfall": "先检查需求合法性（<=Need），再检查资源够不够（<=Available）"}, {"type": "choice", "points": 2, "question": "死锁检测算法与银行家安全性算法的主要区别是：", "options": ["检测算法不使用 Finish 数组", "检测算法中有资源分配的进程初始 Finish[i]=false，无分配的初始 Finish[i]=true", "检测算法使用 Need 矩阵，安全性算法使用 Request 矩阵", "检测算法时间复杂度更低"], "answer": 1, "knowledge_point": "死锁检测", "diagnosis_hint": "不清楚两个算法的初始化差异", "explanation": "<strong>正确答案</strong>：B<br><br><strong>推理过程</strong>：死锁检测算法改进了 Finish 的初始化：若 Allocation[i]=0 则 Finish[i]=true（认为无分配资源的进程已完成）；若 Allocation[i]!=0 则 Finish[i]=false。此外使用 Request 矩阵（当前实际请求）而非 Need 矩阵（最大剩余需求）。", "pitfall": "检测算法用 Request（实际请求），安全性算法用 Need（最大剩余需求）"}, {"type": "tf", "points": 1, "question": "死锁的四个必要条件同时满足，系统一定处于死锁状态。", "options": [], "answer": false, "knowledge_point": "死锁的四个必要条件", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：四个条件是死锁的必要条件，不是充分条件。当资源有多个实例时，即使四个条件都满足（如存在环路），系统仍可能不死锁，因为环路外的进程可以完成并释放资源。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "银行家算法中，不安全状态意味着系统已经发生了死锁。", "options": [], "answer": false, "knowledge_point": "死锁避免之银行家算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：不安全状态表示\"可能\"发生死锁，即存在某种执行序列会导致死锁，但当前并未死锁。安全状态 --> 不死锁；不安全状态 --> 可能死锁（不一定已死锁）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "资源有序分配策略通过破坏\"循环等待\"条件来预防死锁。", "options": [], "answer": true, "knowledge_point": "死锁预防", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：资源有序分配要求所有进程按照预定顺序申请资源，若都按同一顺序申请，则不可能形成循环等待，从而破坏了循环等待条件。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在资源分配图中，若图中存在环路，则系统一定处于死锁状态。", "options": [], "answer": false, "knowledge_point": "资源分配图", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：只有当每种资源只有一个实例时，环路才等价于死锁。若资源有多个实例，环路是死锁的必要条件但非充分条件，例如 P1-->R1-->P3-->R2-->P1 存在环但 P2、P4 可完成并释放 R1 或 R2 的实例，P1/P3 继续执行。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "死锁检测算法中，若 Allocation[i]=0，则初始化时 Finish[i]=true。", "options": [], "answer": true, "knowledge_point": "死锁检测", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：无资源分配的进程不占用任何资源，无论是否获得新请求都不会阻塞其他进程，故视其为已完成状态（Finish[i]=true），这样可以减少不必要的回溯分析。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "死锁预防是动态策略，死锁避免是静态策略。", "options": [], "answer": false, "knowledge_point": "死锁处理方法概述", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：恰好相反。死锁预防是静态策略（在系统设计或进程运行前破坏必要条件）；死锁避免是动态策略（在运行时对每次资源请求动态检测是否会导致不安全状态）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "银行家算法要求每个进程在运行前声明其对各类资源的最大需求量。", "options": [], "answer": true, "knowledge_point": "死锁避免之银行家算法", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：银行家算法需要 Max[n][m] 矩阵（进程声明的最大需求），并通过 Need = Max - Allocation 计算还需资源量。这是银行家算法的前提条件，也是其缺点之一（对程序员要求高）。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "死锁恢复中的\"剥夺资源\"方法需要进程回滚，可能导致饥饿问题。", "options": [], "answer": true, "knowledge_point": "死锁检测与恢复", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：剥夺资源时需要将进程回滚到安全状态，若总是选择同一进程作为牺牲品，该进程可能永远无法完成（饥饿）。解决方法是在代价计算中加入回滚次数，避免反复剥夺同一进程。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "互斥使用（Mutual Exclusion）条件可以通过软件技术完全消除，从而预防死锁。", "options": [], "answer": false, "knowledge_point": "死锁预防", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：错误（×）<br><br><strong>推理过程</strong>：互斥使用是资源的固有特性，由资源本身的物理属性决定（如打印机一次只能服务一个进程），通常无法通过软件消除。因此破坏互斥使用条件在实践中往往不可行。", "pitfall": ""}, {"type": "tf", "points": 1, "question": "在信号量 deadlock.c 示例中，两个线程按相同顺序加锁（都先 P(s0) 再 P(s1)）可以避免死锁。", "options": [], "answer": true, "knowledge_point": "死锁的引入", "diagnosis_hint": "", "explanation": "<strong>正确答案</strong>：正确（√）<br><br><strong>推理过程</strong>：deadlock.c 的问题在于 Tid[0] 先 P(s0) 再 P(s1)，而 Tid[1] 先 P(s1) 再 P(s0)，形成循环等待。若都按 s0-->s1 顺序加锁，则破坏了循环等待条件，不会死锁（这也是资源有序分配的实际应用）。", "pitfall": ""}, {"type": "short", "points": 6, "question": "请列举死锁产生的四个必要条件，并说明死锁预防的基本思路。", "options": [], "answer": "", "knowledge_point": "死锁的四个必要条件 / 死锁预防", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>四个必要条件（各1分，共4分）：</strong><br>①互斥使用：至少一种资源一次只能被一个进程占用；<br>②不可抢占：资源只能由持有进程自愿释放；<br>③持有并等待：进程在持有资源的同时等待其他资源；<br>④循环等待：进程间存在资源等待的环路。<br><br><strong>死锁预防思路（2分）：</strong><br>死锁预防是静态策略，在系统设计时通过破坏四个必要条件中的至少一个来保证死锁不会发生。例如：资源有序分配（破坏循环等待）、一次性分配（破坏持有并等待）等。代价是引入了不合理限制，实际中很少使用。", "pitfall": ""}, {"type": "short", "points": 6, "question": "简述银行家算法的核心思想，并说明\"安全状态\"与\"不安全状态\"的区别。", "options": [], "answer": "", "knowledge_point": "死锁避免之银行家算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>银行家算法核心思想（3分）：</strong><br>银行家算法是死锁避免策略。每当进程请求资源时，系统先试探性地分配资源，再运行安全性检测算法判断是否存在安全序列。若存在安全序列（系统处于安全状态），则真正分配；否则拒绝请求并回滚试探分配。<br><br><strong>安全状态 vs 不安全状态（3分）：</strong><br>安全状态：系统中存在一个进程完成序列 &lt;P1,...,Pn&gt;，使得每个进程所需资源均可由当前剩余资源加上前面进程完成后释放的资源满足。安全状态保证不会发生死锁。<br>不安全状态：不存在这样的安全序列，意味着可能（但不一定）发生死锁。不安全状态 ≠ 已死锁。", "pitfall": ""}, {"type": "short", "points": 6, "question": "死锁检测算法与银行家安全性算法有何异同？死锁检测后如何恢复？", "options": [], "answer": "", "knowledge_point": "死锁检测与恢复", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>异同（4分）：</strong><br>相同点：均使用 Work、Finish 数组，通过循环寻找可完成的进程，时间复杂度均为 O(mn²)。<br>不同点：①初始化：检测算法中 Allocation[i]=0 的进程初始 Finish[i]=true（视为已完成），安全性算法所有进程初始 Finish[i]=false；②矩阵：检测算法用 Request（当前实际请求量），安全性算法用 Need（最大剩余需求）。<br><br><strong>恢复方法（2分）：</strong><br>①终止进程：终止所有或逐个终止代价最小的死锁进程；<br>②剥夺资源：选牺牲品进程，将其资源剥夺给其他进程，需进行回滚并注意防止饥饿。", "pitfall": ""}, {"type": "short", "points": 6, "question": "为什么现实中大多数操作系统采用鸵鸟算法而非银行家算法？请从实用性角度分析。", "options": [], "answer": "", "knowledge_point": "死锁忽略 / 银行家算法讨论", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br>银行家算法不实用的原因（每点1分，共4分）：<br>①进程声明需求困难：要求每个进程在运行前声明最大资源需求，许多程序无法预知，对程序员要求过高；<br>②效率低：每次资源请求都需运行 O(mn²) 的安全性算法，开销过大；<br>③资源利用率低：即使当前有空闲资源，只要分配后使系统进入不安全状态就拒绝，导致资源长时间闲置；<br>④死锁本身出现概率低：实际系统中死锁并不频繁，为此付出巨大性能代价不值得。<br><br>鸵鸟算法优势（2分）：死锁出现时手动重启即可，代价低，绝大多数时间系统正常运行，性价比高。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "详细论述死锁预防的四种具体方法，分别对应破坏哪个必要条件，并分析各自的优缺点。", "options": [], "answer": "", "knowledge_point": "死锁预防", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>1. 破坏互斥使用（2分）：</strong><br>方法：允许资源共享（如将打印任务假脱机到磁盘，多进程可同时写假脱机文件）。<br>缺点：互斥使用是资源的固有物理属性，大多数资源无法共享（如打印机直接使用），实际上几乎不可行。<br><br><strong>2. 破坏不可抢占（2分）：</strong><br>方法：若进程持有资源并请求不能立即满足的新资源，则已持有资源被强制剥夺，等待所有需要的资源都可用时再重新分配。<br>缺点：只对状态可保存/恢复的资源有效（CPU寄存器、内存页），对打印机、串口等无法回滚的资源不适用。<br><br><strong>3. 破坏持有并等待（2分）：</strong><br>方法：进程执行前一次性申请所有所需资源，全部满足才执行。<br>缺点：①需要预知整个运行过程中的全部资源需求，编程困难；②许多资源申请后很长时间才用到，资源利用率极低（资源浪费）。<br><br><strong>4. 破坏循环等待（2分）：</strong><br>方法：对所有资源类型进行全局编号，规定进程必须按编号递增顺序申请资源；若需要低编号资源，必须先释放高编号资源。<br>缺点：①编程时需考虑全局资源顺序，给程序员增加负担；②为申请低序号资源需先释放高序号资源，可能导致重复工作，降低执行效率。在通用OS中使用较少，嵌入式系统中有应用。", "pitfall": ""}, {"type": "essay", "points": 8, "question": "请详细描述银行家安全性检测算法的步骤，并用以下初始状态验证安全序列：\n系统有3类资源（A/B/C），Available=(3,3,2)，各进程状态如下：\n进程 | Allocation(A,B,C) | Need(A,B,C)\nP0   |    (0,1,0)        |  (7,4,3)\nP1   |    (2,0,0)        |  (1,2,2)\nP2   |    (3,0,2)        |  (6,0,0)\nP3   |    (2,1,1)        |  (0,1,1)\nP4   |    (0,0,2)        |  (4,3,1)", "options": [], "answer": "", "knowledge_point": "死锁避免之银行家算法实例", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>算法步骤描述（4分）：</strong><br>①初始化：Work = Available = (3,3,2)；Finish[0..4] = false<br>②找满足条件的进程 Pi：Finish[i]=false 且 Need[i] &lt;= Work<br>③若找到 Pi：Work = Work + Allocation[i]；Finish[i] = true；转②<br>④若所有 Finish[i]=true：安全；否则：不安全（死锁）<br><br><strong>执行过程（4分）：</strong><br>Work=(3,3,2)：P1的Need=(1,2,2) &lt;= (3,3,2) ✓ --> Work=(3,3,2)+(2,0,0)=(5,3,2)，标记P1完成<br>Work=(5,3,2)：P3的Need=(0,1,1) &lt;= (5,3,2) ✓ --> Work=(5,3,2)+(2,1,1)=(7,4,3)，标记P3完成<br>Work=(7,4,3)：P4的Need=(4,3,1) &lt;= (7,4,3) ✓ --> Work=(7,4,3)+(0,0,2)=(7,4,5)，标记P4完成<br>Work=(7,4,5)：P0的Need=(7,4,3) &lt;= (7,4,5) ✓ --> Work=(7,4,5)+(0,1,0)=(7,5,5)，标记P0完成<br>Work=(7,5,5)：P2的Need=(6,0,0) &lt;= (7,5,5) ✓ --> Work=(7,5,5)+(3,0,2)=(10,5,7)，标记P2完成<br>所有进程完成，安全序列为 &lt;P1, P3, P4, P0, P2&gt;，系统处于安全状态。", "pitfall": ""}, {"type": "essay", "points": 10, "question": "对比分析死锁的四种处理策略（预防、避免、检测+恢复、忽略），从原理、优缺点、适用场景三个维度进行论述，并说明为什么嵌入式系统倾向于使用死锁预防而通用OS倾向于使用鸵鸟算法。", "options": [], "answer": "", "knowledge_point": "死锁处理方法概述", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>四种策略对比（8分，每种2分）：</strong><br><br>1. 死锁预防：<br>原理：静态破坏死锁四个必要条件之一，从根源上杜绝死锁。<br>优点：简单，保证绝对不发生死锁。<br>缺点：引入不合理限制（一次性分配、资源有序申请），资源利用率低，编程复杂。<br>场景：嵌入式实时系统（资源固定、可预知，不允许死锁）。<br><br>2. 死锁避免：<br>原理：运行时动态检测（银行家算法），只允许不会导致不安全状态的请求。<br>优点：比预防更灵活，资源利用率略高。<br>缺点：O(mn²) 开销大，要求声明最大需求，不实用。<br>场景：理论研究，实际极少使用。<br><br>3. 死锁检测+恢复：<br>原理：允许死锁发生，定期检测，发现后通过终止进程或剥夺资源恢复。<br>优点：平时无额外开销，资源利用率高。<br>缺点：恢复代价大，可能有已完成工作丢失；实现复杂。<br>场景：数据库事务（有完善的回滚机制）。<br><br>4. 死锁忽略：<br>原理：不做任何处理，死锁发生时人工介入（重启）。<br>优点：零额外开销，最简单。<br>缺点：用户体验差，可能丢失工作。<br>场景：通用OS（UNIX、Windows）。<br><br><strong>嵌入式 vs 通用OS的选择分析（2分）：</strong><br>嵌入式系统资源固定且程序行为可预知，可提前规划资源分配顺序（资源有序分配），死锁预防的代价可以接受，且嵌入式系统通常对实时性和可靠性要求高，绝对不允许死锁发生。通用OS面对的是未知用户程序，无法预知资源需求，银行家算法不可行；同时死锁出现概率低，为罕见事件付出持续的性能代价得不偿失，故采用鸵鸟算法。", "pitfall": ""}, {"type": "comprehensive", "points": 20, "question": "某系统有 R1、R2、R3 三类资源，在 T0 时刻，P1、P2、P3、P4 四个进程的资源情况如下表，系统可用资源向量为 Available=(2,1,2)：\n\n进程 | 最大需求(R1,R2,R3) | 已分配(R1,R2,R3)\nP1   |    (3,2,2)          |  (1,0,0)\nP2   |    (6,1,3)          |  (4,1,1)\nP3   |    (3,1,4)          |  (2,1,1)\nP4   |    (4,2,2)          |  (0,0,2)\n\n（1）（4分）计算系统资源总量向量和各进程的 Need 矩阵。\n（2）（8分）若 P1 和 P2 同时发出资源请求 Request=(1,0,1)，根据银行家算法，应优先满足哪个请求？请分别验证并说明理由。\n（3）（4分）若第（2）题中两个请求都立即得到满足，系统此时是否处于死锁状态？请说明原因。\n（4）（4分）若在 T0 时刻，P2 继续申请 (3,0,2)，是否应该分配？为什么？", "options": [], "answer": "", "knowledge_point": "死锁避免之银行家算法实例 / 资源请求算法", "diagnosis_hint": "", "explanation": "<strong>参考答案</strong>：<br><br><strong>（1）资源总量与Need矩阵（4分）：</strong><br>资源总量 = Available + 所有已分配之和 = (2,1,2)+(1,0,0)+(4,1,1)+(2,1,1)+(0,0,2) = (9,3,6)<br><br>Need = Max - Allocation：<br>P1: (3,2,2)-(1,0,0) = (2,2,2)<br>P2: (6,1,3)-(4,1,1) = (2,0,2)<br>P3: (3,1,4)-(2,1,1) = (1,0,3)<br>P4: (4,2,2)-(0,0,2) = (4,2,0)<br><br><strong>（2）银行家算法分析（8分）：</strong><br>T0时 Available=(2,1,2)。<br><br>先尝试满足 P1 的 Request=(1,0,1)：<br>Check: (1,0,1) &lt;= Need_P1=(2,2,2) ✓；(1,0,1) &lt;= Available=(2,1,2) ✓<br>试分配后：Available=(1,1,1)；Alloc_P1=(2,0,1)；Need_P1=(1,2,1)<br>安全性检测（Work=(1,1,1)）：<br>-- P2: Need=(2,0,2) &gt; (1,1,1)，不满足<br>-- P3: Need=(1,0,3) &gt; (1,1,1)，不满足<br>-- P4: Need=(4,2,0) &gt; (1,1,1)，不满足<br>-- P1: Need=(1,2,1) &gt; (1,1,1)（R2不满足），不满足<br>无法找到可完成进程，系统进入不安全状态 --> 拒绝 P1 的请求，回滚。<br><br>再尝试满足 P2 的 Request=(1,0,1)：<br>Check: (1,0,1) &lt;= Need_P2=(2,0,2) ✓；(1,0,1) &lt;= Available=(2,1,2) ✓<br>试分配后：Available=(1,1,1)；Alloc_P2=(5,1,2)；Need_P2=(1,0,1)<br>安全性检测（Work=(1,1,1)）：<br>-- P2: Need=(1,0,1) &lt;= (1,1,1) ✓ --> Work=(1,1,1)+(5,1,2)=(6,2,3)，P2完成<br>-- P1: Need=(2,2,2) &lt;= (6,2,3) ✓ --> Work=(6,2,3)+(1,0,0)=(7,2,3)，P1完成<br>-- P3: Need=(1,0,3) &lt;= (7,2,3) ✓ --> Work=(7,2,3)+(2,1,1)=(9,3,4)，P3完成<br>-- P4: Need=(4,2,0) &lt;= (9,3,4) ✓ --> Work=(9,3,4)+(0,0,2)=(9,3,6)，P4完成<br>安全序列 &lt;P2,P1,P3,P4&gt; 存在，系统安全 --> 允许 P2 的请求。<br>结论：应优先满足 P2 的请求，拒绝 P1 的请求。<br><br><strong>（3）是否已死锁（4分）：</strong><br>若两个请求都立即满足（Available=(2,1,2)-(1,0,1)-(1,0,1)=(0,1,0)），此时系统尚未处于死锁状态。原因：死锁要求所有相关进程已因资源申请被阻塞。此时各进程虽然剩余资源很少，但只要它们暂时不提出新的资源请求，就不会阻塞，也就没有形成死锁。只有当全部进程都因资源申请进入阻塞状态时，系统才处于死锁状态。<br><br><strong>（4）P2 申请 (3,0,2)（4分）：</strong><br>Check: (3,0,2) &lt;= Need_P2=(2,0,2)？ 3 &gt; 2，不满足！<br>P2 申请的 R1 数量(3)超过其声明的最大剩余需求(2)，直接报错拒绝，不进入后续安全性检测。这违反了银行家算法的前提条件：进程实际请求不得超过其声明的最大需求。", "pitfall": ""}];
+var LABELS = {"page_title": "章节测试", "section": {"choice": "一、选择题", "tf": "二、判断题", "short": "三、简答题", "essay": "四、问答题", "comprehensive": "五、综合题"}, "section_order": ["choice", "tf", "short", "essay", "comprehensive"], "points_suffix": "分", "true_label": "正确", "false_label": "错误", "placeholder": "在此作答...", "pitfall_prefix": "易错提醒：", "correct_label": "正确", "wrong_label": "错误", "answer_prefix": "正确答案：", "reference_label": "参考答案", "graded_label": "已批改", "grade_button": "提交批改", "unanswered_label": "未作答", "wrong_review_title": "错题分析文档", "wrong_review_intro": "本次收录 __COUNT__ 道客观题错题。可以下载 Markdown 文档，或复制整段内容交给模型做错因分析和二次学习规划。", "no_wrong_questions": "本次客观题没有错题。主观题请对照参考答案自行复盘。", "download_wrong_review": "下载错题文档", "copy_wrong_review_prompt": "复制错题分析 Prompt", "score_label": "总分", "duration_prefix": "满分 100 分 | 建议 ", "duration_suffix": " 分钟 | 选择答案后点击提交批改"};
+var WRONG_REVIEW_PROMPT = "";
+var LAST_WRONG_REVIEW = '';
+
+function pointsOf(q) {
+  return q.points || q.score || 0;
+}
+
+function stripHtml(html) {
+  var div = document.createElement('div');
+  div.innerHTML = html || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// Convert Markdown fenced code blocks (```lang\n...\n```) and inline `code`
+// to <pre><code> / <code> HTML, then convert \n to <br> for plain text lines.
+function formatQuestion(text) {
+  if (!text) return '';
+  // 1. Replace fenced code blocks: ```lang\ncode\n```
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var cls = lang ? ' class="language-' + lang + '"' : '';
+    return '<pre><code' + cls + '>' + escaped + '</code></pre>';
+  });
+  // 2. Replace inline backtick `code`
+  text = text.replace(/`([^`\n]+)`/g, function(_, code) {
+    var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<code>' + escaped + '</code>';
+  });
+  // 3. Convert remaining \n to <br> (outside pre blocks already handled above)
+  // Split on <pre>...</pre> so we don't double-process code blocks
+  var parts = text.split(/(<pre>[\s\S]*?<\/pre>)/);
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      parts[i] = parts[i].replace(/\n/g, '<br>');
+    }
+  }
+  return parts.join('');
+}
+
+function answerText(q, value) {
+  if (value === null || value === undefined || value === '') return LABELS.unanswered_label;
+  var idx = parseInt(value);
+  if (q.type === 'choice') {
+    return String.fromCharCode(65 + idx) + '. ' + ((q.options && q.options[idx]) ? stripHtml(q.options[idx]) : '');
+  }
+  if (q.type === 'tf') {
+    return idx === 0 ? LABELS.true_label : LABELS.false_label;
+  }
+  return String(value);
+}
+
+function normalizedAnswer(q) {
+  if (q.type === 'tf') {
+    if (q.answer === LABELS.true_label || q.answer === true || q.answer === 'true') return 0;
+    if (q.answer === LABELS.false_label || q.answer === false || q.answer === 'false') return 1;
+  }
+  return parseInt(q.answer);
+}
+
+function questionTypeLabel(type) {
+  return LABELS.section[type] || type;
+}
+
+function build(){
+  var container = document.getElementById('questions-container');
+  if (!container) { console.error('ExamPass: questions-container not found'); return; }
+  var h = '';
+  var sec = '';
+  var titles = LABELS.section;
+
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var s = q.type;
+    if (s !== sec) {
+      sec = s;
+      if (titles[s]) {
+        h += '<h3>' + titles[s] + '</h3>';
+      }
+    }
+
+    var qid = 'q' + i;
+    h += '<div class="q-card" id="card-' + qid + '">';
+    h += '<div class="q-num">' + (i+1) + '. (' + pointsOf(q) + ' ' + LABELS.points_suffix + ')</div>';
+    h += '<div class="q-text">' + formatQuestion(q.question) + '</div>';
+
+    if (q.type === 'choice') {
+      var opts = q.options || [];
+      for (var j = 0; j < opts.length; j++) {
+        h += '<label class="option" id="opt-' + qid + '-' + j + '" onclick="sel(\'' + qid + '\',' + j + ')">';
+        h += '<input type="radio" name="' + qid + '" value="' + j + '">' + String.fromCharCode(65+j) + '. ' + opts[j] + '</label>';
+      }
+    } else if (q.type === 'tf') {
+      h += '<label class="option" id="opt-' + qid + '-0" onclick="sel(\'' + qid + '\',0)">';
+      h += '<input type="radio" name="' + qid + '" value="0">' + LABELS.true_label + '</label>';
+      h += '<label class="option" id="opt-' + qid + '-1" onclick="sel(\'' + qid + '\',1)">';
+      h += '<input type="radio" name="' + qid + '" value="1">' + LABELS.false_label + '</label>';
+    } else {
+      h += '<textarea class="q-textarea" id="text-' + qid + '" placeholder="' + LABELS.placeholder + '" rows="3"></textarea>';
+    }
+
+    h += '<div class="result" id="result-' + qid + '">';
+    h += '<span class="badge" id="badge-' + qid + '"></span><span id="correct-' + qid + '"></span>';
+    h += '<div class="explanation">' + q.explanation + '</div>';
+    if (q.pitfall) {
+      h += '<div class="pitfall">' + LABELS.pitfall_prefix + q.pitfall + '</div>';
+    }
+    h += '</div></div>';
+  }
+
+  container.innerHTML = h;
+
+  // Re-render MathJax for dynamically inserted formulas
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', build);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  build();
+}
+
+function sel(qid, idx) {
+  var prefix = 'opt-' + qid + '-';
+  var all = document.querySelectorAll('[id^="' + prefix + '"]');
+  for (var i = 0; i < all.length; i++) {
+    all[i].classList.remove('selected');
+  }
+  var target = document.getElementById('opt-' + qid + '-' + idx);
+  if (target) {
+    target.classList.add('selected');
+  }
+  var radio = document.querySelector('input[name="' + qid + '"][value="' + idx + '"]');
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+function gradeAll() {
+  var score = 0;
+  var wrongItems = [];
+  for (var i = 0; i < Q.length; i++) {
+    var q = Q[i];
+    var qid = 'q' + i;
+    var card = document.getElementById('card-' + qid);
+    var result = document.getElementById('result-' + qid);
+    var badge = document.getElementById('badge-' + qid);
+    var correctEl = document.getElementById('correct-' + qid);
+    if (!card || !result) continue;
+
+    result.style.display = 'block';
+
+    if (q.type === 'choice' || q.type === 'tf') {
+      var radio = document.querySelector('input[name="' + qid + '"]:checked');
+      var correctIndex = normalizedAnswer(q);
+      if (radio && parseInt(radio.value) === correctIndex) {
+        score += pointsOf(q);
+        card.classList.add('correct');
+        badge.className = 'badge badge-ok';
+        badge.textContent = LABELS.correct_label;
+        correctEl.innerHTML = '';
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+      } else {
+        card.classList.add('wrong');
+        badge.className = 'badge badge-no';
+        badge.textContent = LABELS.wrong_label;
+        var ansText = answerText(q, correctIndex);
+        correctEl.innerHTML = LABELS.answer_prefix + ansText;
+        if (radio) {
+          var wrongOpt = document.getElementById('opt-' + qid + '-' + radio.value);
+          if (wrongOpt) wrongOpt.classList.add('wrong-answer');
+        }
+        var correctOpt = document.getElementById('opt-' + qid + '-' + correctIndex);
+        if (correctOpt) correctOpt.classList.add('correct-answer');
+        wrongItems.push({
+          number: i + 1,
+          type: questionTypeLabel(q.type),
+          points: pointsOf(q),
+          question: stripHtml(q.question),
+          options: (q.options || []).map(stripHtml),
+          userAnswer: answerText(q, radio ? radio.value : null),
+          correctAnswer: ansText,
+          explanation: stripHtml(q.explanation),
+          pitfall: stripHtml(q.pitfall || ''),
+          knowledgePoint: stripHtml(q.knowledge_point || q.knowledgePoint || '')
+        });
+      }
+    } else {
+      card.classList.add('correct');
+      badge.className = 'badge badge-ref';
+      badge.textContent = LABELS.reference_label;
+    }
+  }
+
+  var sb = document.getElementById('score-box');
+  if (sb) {
+    sb.style.display = 'block';
+    document.getElementById('score-num').textContent = score;
+    sb.scrollIntoView({behavior:'smooth'});
+  }
+
+  var opts = document.querySelectorAll('.option');
+  for (var i = 0; i < opts.length; i++) opts[i].style.pointerEvents = 'none';
+  var tas = document.querySelectorAll('.q-textarea');
+  for (var i = 0; i < tas.length; i++) tas[i].disabled = true;
+
+  var btn = document.getElementById('grade-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = LABELS.graded_label;
+  }
+
+  buildWrongReview(wrongItems);
+
+  // Re-render MathJax for revealed explanations
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise().catch(function(err) {
+      console.error('MathJax typeset error:', err);
+    });
+  }
+}
+
+function buildWrongReview(wrongItems) {
+  var box = document.getElementById('wrong-review-box');
+  if (!box) return;
+
+  LAST_WRONG_REVIEW = renderWrongReviewMarkdown(wrongItems);
+
+  if (!wrongItems.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<h3>' + LABELS.wrong_review_title + '</h3><p>' + LABELS.no_wrong_questions + '</p>';
+    return;
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = [
+    '<h3>' + LABELS.wrong_review_title + '</h3>',
+    '<p>' + LABELS.wrong_review_intro.replace('__COUNT__', wrongItems.length) + '</p>',
+    '<div class="wrong-review-actions">',
+    '<button type="button" onclick="downloadWrongReview()">' + LABELS.download_wrong_review + '</button>',
+    '<button type="button" onclick="copyWrongReviewPrompt()">' + LABELS.copy_wrong_review_prompt + '</button>',
+    '</div>',
+    '<textarea id="wrong-review-text" readonly rows="12">' + LAST_WRONG_REVIEW.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>'
+  ].join('');
+}
+
+function renderWrongReviewMarkdown(wrongItems) {
+  var now = new Date().toLocaleString();
+  var lines = [];
+
+  lines.push('# ExamPass 错题分析文档');
+  lines.push('');
+  lines.push('- 生成时间：' + now);
+  lines.push('- 错题数量：' + wrongItems.length);
+  lines.push('');
+  lines.push('## 给模型的错题分析 Prompt');
+  lines.push('');
+  if (WRONG_REVIEW_PROMPT) {
+    lines.push(WRONG_REVIEW_PROMPT);
+  } else {
+    lines.push('请根据下面的错题记录，分析我的错因，并给出继续学习方案。要求：');
+    lines.push('1. 按知识模块归类错题，不要只逐题复述答案；');
+    lines.push('2. 判断每道题错在概念定义、公式推导、图表理解、条件适用、计算步骤、概念混淆还是审题；');
+    lines.push('3. 对涉及公式或推导的错题，补全从前提到结论的推导链条，不能跳步；');
+    lines.push('4. 对选择题，解释我选错选项为什么有迷惑性，以及正确选项和错误选项的关键边界；');
+    lines.push('5. 给出需要回看课件的具体知识点、图表、公式和页/章节线索；');
+    lines.push('6. 最后生成一份二次学习清单和 5 道针对这些薄弱点的进阶训练题。');
+  }
+  lines.push('');
+  lines.push('## 错题记录');
+  lines.push('');
+
+  if (!wrongItems.length) {
+    lines.push('本次没有客观题错题。');
+    return lines.join('\n');
+  }
+
+  for (var i = 0; i < wrongItems.length; i++) {
+    var item = wrongItems[i];
+    lines.push('### 错题 ' + (i + 1) + '：第 ' + item.number + ' 题');
+    lines.push('');
+    lines.push('- 题型：' + item.type);
+    lines.push('- 分值：' + item.points);
+    lines.push('- 题干：' + item.question);
+    if (item.options.length) {
+      lines.push('- 选项：');
+      for (var j = 0; j < item.options.length; j++) {
+        lines.push('  - ' + String.fromCharCode(65 + j) + '. ' + item.options[j]);
+      }
+    }
+    lines.push('- 我的答案：' + item.userAnswer);
+    lines.push('- 正确答案：' + item.correctAnswer);
+    lines.push('- 解析：' + item.explanation);
+    if (item.pitfall) lines.push('- 易错点：' + item.pitfall);
+    if (item.knowledgePoint) lines.push('- 对应知识点：' + item.knowledgePoint);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+function downloadWrongReview() {
+  if (!LAST_WRONG_REVIEW) return;
+  var blob = new Blob([LAST_WRONG_REVIEW], {type: 'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '错题分析文档.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function copyWrongReviewPrompt() {
+  var text = LAST_WRONG_REVIEW || '';
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text);
+  } else {
+    var ta = document.getElementById('wrong-review-text');
+    if (ta) {
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+    }
+  }
+}
+
+</script>
+</body>
+</html>

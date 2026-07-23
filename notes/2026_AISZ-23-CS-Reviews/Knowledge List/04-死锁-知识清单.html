@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>第四章：死锁</title>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>
+<style>
+/* === ExamPass Shared Styles === */
+/* Paper-like warm background, clean typography, responsive */
+
+:root {
+  --paper: #fdf6e3;
+  --paper-dark: #f5ecd7;
+  --ink: #2c2c2c;
+  --ink-light: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --divider: #d6c8a8;
+  --card-bg: #fef9ef;
+  --card-border: #e8dcc8;
+  --correct: #22c55e;
+  --correct-bg: #f0fdf4;
+  --wrong: #ef4444;
+  --wrong-bg: #fef2f2;
+  --tag-bg: #fef3c7;
+  --tag-text: #92400e;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Noto Sans SC", "SimSun", sans-serif;
+  font-size: 12pt; line-height: 1.75; color: var(--ink);
+  max-width: 860px; margin: auto; padding: 24px 20px 60px;
+  background: var(--paper);
+}
+
+@media print {
+  body { font-size: 10.5pt; background: #fff; }
+  .no-print { display: none !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+
+/* ── Header ── */
+#exampass-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; margin-bottom: 0;
+}
+.header-brand { font-size: 1.2em; font-weight: 700; color: #1a1a2e; letter-spacing: 0.3px; }
+.header-url  { font-size: 0.78em; color: #999; }
+.header-divider { border: none; border-top: 2px solid var(--divider); margin: 4px 0 20px 0; }
+
+/* ── Typography ── */
+h1 { font-size: 1.55em; text-align: center; border-bottom: 2px solid var(--divider); padding-bottom: 8px; margin-top: 0; }
+h2 { font-size: 1.25em; border-bottom: 1px solid var(--divider); padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 1.08em; margin-top: 20px; color: var(--ink); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Tables ── */
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+td, th { border: 1px solid var(--card-border); padding: 5px 9px; text-align: left; }
+th { background: var(--paper-dark); font-weight: 700; }
+
+/* ── Embedded source images ── */
+.embedded-images {
+  margin: 18px 0 24px;
+}
+.embedded-images-intro {
+  color: var(--ink-light);
+  font-size: 0.95em;
+}
+.embedded-image {
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  break-inside: avoid;
+}
+.embedded-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--divider);
+  background: #fff;
+}
+.embedded-image figcaption {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.embedded-image-note::before {
+  content: " - ";
+}
+
+/* ── Knowledge point vs explanation ── */
+.kp { font-weight: 700; color: var(--ink); }           /* key point: bold dark */
+.exp { font-weight: 400; color: var(--ink-light); }    /* explanation: lighter */
+.exp em, .exp strong { color: var(--ink); }             /* emphasis inside explanation */
+
+/* ── Block elements ── */
+blockquote {
+  border-left: 3px solid #c0392b; background: #fef9ef;
+  padding: 6px 14px; margin: 10px 0; font-size: 0.95em;
+}
+code { background: #f0ede0; padding: 2px 5px; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f0ede0; padding: 10px; border-radius: var(--radius); overflow-x: auto; }
+
+/* ── TOC ── */
+div.toc {
+  background: var(--card-bg); padding: 14px 18px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); margin-bottom: 22px;
+}
+div.toc ul { padding-left: 18px; }
+div.toc li { margin: 3px 0; font-size: 0.95em; }
+
+/* ── Priority tags ── */
+.tag-must   { background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-key    { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-freq   { background: #dbeafe; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+.tag-info   { background: #f0fdf4; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 0.82em; font-weight: 600; }
+
+
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-to-index" title="返回资料总览" aria-label="返回资料总览">
+  <span class="bti-arrow">←</span><span class="bti-text">资料总览</span>
+</a>
+<style>
+  .back-to-index {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #b8341c; color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 600; line-height: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 4px 14px rgba(184,52,28,.35);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .back-to-index:hover { background: #9c2b16; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(184,52,28,.45); }
+  .back-to-index .bti-arrow { font-size: 15px; }
+  @media (max-width: 600px) { .back-to-index .bti-text { display: none; } .back-to-index { padding: 9px 11px; } }
+  @media print { .back-to-index { display: none; } }
+</style>
+
+
+<header id="exampass-header">
+  <div class="header-left"><span class="header-brand">ExamPass Assistant</span></div>
+  <div class="header-right"><span class="header-url">github.com/MIKUZ12/ExamPass-Assistant</span></div>
+</header>
+<hr class="header-divider">
+
+<h1>第四章：死锁</h1>
+<div class="toc">
+<h2>目录</h2>
+<ul>
+<li><a href="#s45323861">一、死锁的引入</a></li>
+  <li><a href="#s38070430">1.1 死锁的概念 必考</a></li>
+  <li><a href="#s12520039">1.2 进度图分析死锁 重点</a></li>
+<li><a href="#s67272494">二、死锁的四个必要条件</a></li>
+  <li><a href="#s63092224">2.1 四个必要条件 必考</a></li>
+  <li><a href="#s34746757">2.2 资源分配图（RAG） 重点</a></li>
+<li><a href="#s77869286">三、死锁处理方法</a></li>
+  <li><a href="#s37920876">3.1 死锁预防 必考</a></li>
+  <li><a href="#s47119887">3.2 死锁避免（银行家算法） 必考</a></li>
+  <li><a href="#s22308193">3.3 死锁检测与恢复 重点</a></li>
+  <li><a href="#s86525730">3.4 死锁忽略（鸵鸟算法） 常考</a></li>
+  <li><a href="#s23524855">3.5 四种方法对比 重点</a></li>
+</ul>
+</div>
+
+<h2 id="s45323861">一、死锁的引入</h2>
+
+<h3 id="s38070430">1.1 死锁的概念 <span class="tag-must">必考</span></h3>
+<p>
+  <span class="kp">死锁（Deadlock）</span>：多个进程（线程）因<span class="kp">循环等待资源</span>而造成无法执行的现象。
+</p>
+<ul>
+  <li>死锁会造成进程无法执行，系统资源<span class="exp">无法释放，极大浪费</span>。</li>
+  <li>经典现象：进程A占有资源1等待资源2，进程B占有资源2等待资源1 --> 循环等待 --> 死锁。</li>
+</ul>
+<p><strong>信号量引发死锁示例（deadlock.c）：</strong></p>
+<pre><code>// Tid[0]          Tid[1]:
+// P(s0)           P(s1)
+// P(s1)  &lt;-死锁-&gt; P(s0)
+// cnt++           cnt++
+// V(s0)           V(s1)
+// V(s1)           V(s0)</code></pre>
+<p>两个线程以相反顺序申请两个互斥信号量，必然进入死锁区。</p>
+<blockquote>易错：有环路不一定死锁（当资源有多个实例时，环路只是必要条件而非充分条件）。</blockquote>
+
+<h3 id="s12520039">1.2 进度图分析死锁 <span class="tag-key">重点</span></h3>
+<p>
+  <span class="kp">死锁区（Deadlock Region）</span>：进度图中，任何进入该区域的执行轨迹都会最终到达<span class="kp">死锁状态</span>，无限等待某信号量变为非0。
+</p>
+<ul>
+  <li>死锁经常是<span class="exp">非确定的（nondeterministic）</span>：死锁的产生与调度顺序有关。</li>
+  <li>不同执行轨迹可能避开或进入死锁区。</li>
+</ul>
+
+<h2 id="s67272494">二、死锁的四个必要条件</h2>
+
+<h3 id="s63092224">2.1 四个必要条件 <span class="tag-must">必考</span></h3>
+<p>产生死锁必须<strong>同时</strong>满足以下四个条件：</p>
+<table>
+  <tr><th>条件</th><th>含义</th></tr>
+  <tr>
+    <td><span class="kp">互斥使用（Mutual Exclusion）</span></td>
+    <td>至少有一个资源一次只能被一个进程占用</td>
+  </tr>
+  <tr>
+    <td><span class="kp">不可抢占（No Preemption）</span></td>
+    <td>资源只能由持有者自愿释放，不能强行剥夺</td>
+  </tr>
+  <tr>
+    <td><span class="kp">持有并等待（Hold and Wait）</span></td>
+    <td>进程已持有资源，又在等待其他资源</td>
+  </tr>
+  <tr>
+    <td><span class="kp">循环等待（Circular Wait）</span></td>
+    <td>在资源分配图中存在一个环路</td>
+  </tr>
+</table>
+<blockquote>易错：四个条件是<strong>必要条件</strong>而非充分条件，即同时满足四个条件不一定死锁（资源有多实例时）；但死锁一定满足这四个条件。</blockquote>
+
+<h3 id="s34746757">2.2 资源分配图（RAG） <span class="tag-key">重点</span></h3>
+<p>
+  <span class="kp">资源分配图</span>模型：进程集合 {P1,P2,...,Pn}，资源类型集合 {R1,R2,...,Rm}，资源 Ri 有 Wi 个实例（黑点表示）。
+</p>
+<ul>
+  <li><span class="kp">资源请求边</span>：有向边 Pi --> Rj（进程请求资源）</li>
+  <li><span class="kp">资源分配边</span>：有向边 Ri --> Pk（资源已分配给进程）</li>
+</ul>
+<p><strong>环路与死锁的关系：</strong></p>
+<ul>
+  <li>若每种资源<strong>只有一个实例</strong>：存在环路 &lt;=&gt; 死锁</li>
+  <li>若某种资源<strong>有多个实例</strong>：存在环路是死锁的<span class="exp">必要非充分条件</span></li>
+</ul>
+
+<h2 id="s77869286">三、死锁处理方法</h2>
+
+<h3 id="s37920876">3.1 死锁预防 <span class="tag-must">必考</span></h3>
+<p>思想：<span class="kp">破坏死锁四个必要条件之一</span>，从根本上防止死锁发生（静态策略）。</p>
+<table>
+  <tr><th>破坏条件</th><th>方法</th><th>缺点</th></tr>
+  <tr>
+    <td>破坏互斥使用</td>
+    <td>允许资源共享</td>
+    <td>资源固有特性，通常<strong>无法</strong>破除（如打印机）</td>
+  </tr>
+  <tr>
+    <td>破坏不可抢占</td>
+    <td>持有资源的进程申请新资源被拒时，释放已持有资源</td>
+    <td>只对可保存/恢复状态的资源有效（CPU、内存），对打印机等不适用</td>
+  </tr>
+  <tr>
+    <td>破坏持有并等待</td>
+    <td>进程执行前一次性申请所有资源</td>
+    <td>需预知未来（编程困难）；资源利用率低</td>
+  </tr>
+  <tr>
+    <td>破坏循环等待</td>
+    <td><span class="kp">资源有序分配</span>：对资源类型排序，申请必须按序进行</td>
+    <td>编程别扭；为申请低序号资源需先释放高序号资源，效率降低</td>
+  </tr>
+</table>
+<blockquote>易错：银行家算法是死锁<strong>避免</strong>，不是死锁预防。资源有序分配才是破坏循环等待（死锁预防）。</blockquote>
+
+<h3 id="s47119887">3.2 死锁避免（银行家算法） <span class="tag-must">必考</span></h3>
+<p>
+  思想：<span class="kp">动态检测每次资源请求</span>，若分配后系统仍处于安全状态则允许，否则拒绝（摸石头过河）。
+</p>
+
+<h4>核心概念</h4>
+<ul>
+  <li><span class="kp">安全状态</span>：存在一个可完成的执行序列 &lt;P1,...,Pn&gt;，每个进程所需资源 &le; 剩余资源 + 前面已完成进程释放的资源。</li>
+  <li><span class="kp">安全序列</span>：上述可完成的执行序列。</li>
+  <li>安全状态 --> 不死锁；<span class="exp">不安全状态不一定死锁，但可能死锁</span>。</li>
+</ul>
+
+<h4>银行家算法数据结构</h4>
+<ul>
+  <li><code>Available[m]</code>：各类资源当前可用总量</li>
+  <li><code>Allocation[n][m]</code>：当前已分配给每个进程的各类资源量</li>
+  <li><code>Need[n][m]</code>：每个进程还需要的各类资源量</li>
+  <li><code>Work[m]</code>：算法中动态追踪可用资源（初始 = Available）</li>
+  <li><code>Finish[n]</code>：进程是否能完成</li>
+</ul>
+
+<h4>安全性检测算法（时间复杂度 O(mn²)）</h4>
+<pre><code>① Work = Available; Finish[1..n] = false
+② 找未完成且 Need[i] &lt;= Work 的进程 Pi
+③ Work = Work + Allocation[i]; Finish[i] = true; GOTO ②
+④ 若所有 Finish[i]=true，则安全；否则不安全（死锁）</code></pre>
+
+<h4>资源请求算法</h4>
+<pre><code>若 Request[i] &gt; Need[i]  --> 错误
+若 Request[i] &gt; Available --> 等待
+试分配：Available -= Request; Allocation[i] += Request; Need[i] -= Request
+调用安全性算法：若不安全 --> 回滚拒绝；若安全 --> 分配成功</code></pre>
+
+<h4>银行家算法经典示例</h4>
+<p>5进程3资源（A/B/C），初始 Available=(3,3,2)，安全序列为 &lt;P1,P3,P4,P0,P2&gt;。</p>
+<blockquote>易错：安全序列不唯一；不安全状态不等于已死锁；每次资源请求都需重新运行安全性算法，开销大。</blockquote>
+
+<h4>银行家算法的缺点</h4>
+<ul>
+  <li>要求进程声明最大资源需求，对程序员要求高</li>
+  <li>安全性检测 O(mn²) 过于复杂，每次请求都执行效率低</li>
+  <li>资源利用率大幅降低（可用资源因不安全而不被分配）</li>
+</ul>
+
+<h3 id="s22308193">3.3 死锁检测与恢复 <span class="tag-key">重点</span></h3>
+<p>
+  思想：<span class="kp">只要可用资源足够则先分配</span>，定期运行检测算法，发现死锁再处理（掉坑爬出）。
+</p>
+
+<h4>死锁检测算法（改进版银行家）</h4>
+<ul>
+  <li>与安全性算法区别：<code>Finish[i]</code> 初始化时，若 <code>Allocation[i]==0</code> 则 <code>Finish[i]=true</code>（无分配资源的进程视为已完成）</li>
+  <li>使用 <code>Request[n][m]</code> 替代 <code>Need[n][m]</code>（当前实际请求量）</li>
+  <li>检测到 <code>Finish[i]=false</code> 的进程 --> 死锁进程组</li>
+  <li>可通过<span class="kp">资源分配图（RAG）</span>中的环路检测（如强连通分量算法）辅助判断</li>
+</ul>
+
+<h4>死锁恢复方法</h4>
+<ul>
+  <li><span class="kp">方法一：终止进程</span>
+    <ul>
+      <li>终止所有死锁进程（简单但代价大）</li>
+      <li>逐个终止代价最小的进程直到解除死锁（考虑：优先级、已执行时间、资源类型、剩余需求等）</li>
+    </ul>
+  </li>
+  <li><span class="kp">方法二：剥夺资源</span>（进程需要回滚 Rollback）
+    <ul>
+      <li>选择牺牲品：代价最小的进程</li>
+      <li>回滚：将进程回滚到安全状态（部分回滚 or 完全回滚）</li>
+      <li>防止饥饿：回滚次数计入代价因素</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="s86525730">3.4 死锁忽略（鸵鸟算法） <span class="tag-freq">常考</span></h3>
+<p>
+  思想：对死锁不做任何处理，死锁发生时手动干预（重启）。
+</p>
+<ul>
+  <li>UNIX、Windows 等大多数通用操作系统均采用此策略</li>
+  <li>原因：死锁出现非确定，避免死锁付出的代价过大且往往毫无意义</li>
+</ul>
+
+<h3 id="s23524855">3.5 四种方法对比 <span class="tag-key">重点</span></h3>
+<table>
+  <tr><th>方法</th><th>思路</th><th>代价/缺点</th><th>实际使用</th></tr>
+  <tr>
+    <td>死锁预防</td>
+    <td>破坏必要条件（静态）</td>
+    <td>引入不合理因素，效率低</td>
+    <td>嵌入式系统</td>
+  </tr>
+  <tr>
+    <td>死锁避免</td>
+    <td>银行家算法动态检测</td>
+    <td>O(mn²)，效率过低</td>
+    <td>理论研究</td>
+  </tr>
+  <tr>
+    <td>死锁检测+恢复</td>
+    <td>允许死锁发生，发现后恢复</td>
+    <td>实现较难，恢复代价大</td>
+    <td>部分数据库</td>
+  </tr>
+  <tr>
+    <td>死锁忽略</td>
+    <td>不处理，重启解决</td>
+    <td>用户体验差</td>
+    <td><strong>UNIX/Windows（最常用）</strong></td>
+  </tr>
+</table>
+
+
+
+</body>
+</html>
